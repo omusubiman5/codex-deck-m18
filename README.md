@@ -7,7 +7,47 @@ VSD Inside M18を、Windows版Codex Desktopの**Codex Micro操作デバイス**�
 > [!IMPORTANT]
 > OpenAI、Codex Deck、M18メーカーによる公式製品ではありません。Codex Desktopの非公開内部インターフェースを利用するため、Codexの更新後に追従修正が必要になる可能性があります。
 
-## 特徴
+## Codex Deckとは
+
+Codex Deckは、物理デバイスからCodex Desktopの**ネイティブなCodex Micro機能**を操作する上流OSSです。キー入力をショートカットへ変換するだけのマクロツールではありません。Codex DesktopへローカルCDPで接続し、Codex Micro自身が使うイベントと状態を読み書きします。
+
+このM18版は、次のCodex Deck機能を維持しています。
+
+- **6つのAgentキー**：`Codex Settings > Codex Micro`で選択されたソースと割当を使用
+- **Agent状態表示**：未割当、待機、作業中、完了未読、承認・入力待ち、エラーを表示
+- **選択中タスク表示**：現在開いているCodexタスクと物理キーを同期
+- **進捗表現**：Codexに合わせたライト／ダーク表示、状態色、控えめなアニメーション
+- **Microアクション**：`ACT06`～`ACT12`の割当とkey-down／key-upをそのまま送信
+- **ナビゲーション**：Joystickの上下左右でPlan、Forward、Sidebar、Backを操作
+- **Reasoning操作**：エンコーダ押下とReasoning effortの増減
+- **公式Keycapコマンド**：インストール中のCodexからコマンド定義を解決して実行
+- **利用量表示**：5時間／週次の上限、両期間の概要、リセットクレジット
+- **新規タスク**：`codex://threads/new`によるローカルタスク作成
+- **複数ホスト**：認証付きSSH／Tailscale relayによるWindows・Mac統合
+- **ホスト状態表示**：接続劣化・オフラインとlast-known状態を表示
+- **iPhone companion**：SwiftUIアプリからAgent、利用量、Micro操作を利用
+
+### Codex Deck機能とM18既定面の関係
+
+Codex Deckの機能はコードから削除していません。ただしM18の18ボタンには全追加機能を同時配置できないため、既定面はCodex Micro本体の操作を優先しています。
+
+| Codex Deck機能 | コア実装 | M18既定ボタン |
+|---|---:|---:|
+| Agent 1–6とライブ状態 | 維持 | あり |
+| `ACT06`～`ACT12` | 維持 | あり |
+| Joystick上下左右 | 維持 | あり |
+| Encoder押下／Reasoning増減 | 維持 | あり |
+| 公式Keycap単独コマンド | 維持 | なし |
+| Usage Limit／Usage Overview | 維持 | なし |
+| Rate Limit Reset | 維持 | なし |
+| New Task | 維持 | なし |
+| Windows／Mac切替キー | 維持 | なし |
+| Stream Deckプラグイン | 維持 | M18とは別経路 |
+| iPhone companion | 維持 | M18とは別経路 |
+
+ここで「なし」は機能削除ではなく、現在のM18固定レイアウトに物理キーを割り当てていないという意味です。
+
+## M18版の特徴
 
 - M18の15個のLCDキーと下段3ボタンからCodex Microの全操作を実行
 - 6つのCodexタスク状態をLCDへ同期表示
@@ -36,12 +76,12 @@ VSD Inside M18を、Windows版Codex Desktopの**Codex Micro操作デバイス**�
 | M18入力 | Codex Micro機能 |
 |---|---|
 | LCD 1–6 | Agent 1–6 |
-| LCD 7 | Fast |
-| LCD 8 | Approve |
-| LCD 9 | Reject |
-| LCD 10 | Fork |
-| LCD 11 | Dictation |
-| LCD 12 | Send |
+| LCD 7 | `ACT06`（既定：Fast） |
+| LCD 8 | `ACT07`（既定：Approve） |
+| LCD 9 | `ACT08`（既定：Reject） |
+| LCD 10 | `ACT09`（既定：Fork） |
+| LCD 11 | `ACT10/11`（既定：Dictation） |
+| LCD 12 | `ACT12`（既定：Send） |
 | LCD 13 | Plan（Joystick Up） |
 | LCD 14 | Back（Joystick Left） |
 | LCD 15 | Forward（Joystick Right） |
@@ -51,6 +91,8 @@ VSD Inside M18を、Windows版Codex Desktopの**Codex Micro操作デバイス**�
 | 下段右 | Reasoningを1段上げる |
 
 Codex Microには、エンコーダ押下を別に数えると19種類の論理ジェスチャがあります。M18は18ボタンなので、下段中央だけ短押しと長押しを使い分けます。
+
+LCD 7～12は名称をハードコードしたマクロではなく、Codex Microのアクションスロットです。Codex側で割当を変更すると、Codex Deckが取得する表示と実行内容も追従します。表中の名称はCodex Microの既定構成を示します。
 
 ## 仕組み
 
