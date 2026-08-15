@@ -34,6 +34,8 @@ VSD Craftの標準UIでキーをドラッグ配置します。実機には次の
 
 下3物理ボタンにはVSD Craft標準の`シーンシフト`だけを設定し、Codex操作は割り当てません。3環境のどの面からでも同じ位置へ直接切り替わります。
 
+会議用には`TEAMS`、`MEET`、`ZOOM`、`Discord`の4シーンも作成できます。各シーンへ15個のWindowsショートカットと専用アイコンを設定する手順は[会議パネル](docs/vsd-craft/MEETING_PANELS.md)を参照してください。
+
 ビルドと検証：
 
 ```powershell

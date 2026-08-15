@@ -26,6 +26,7 @@
     "test": "tsx --test test/*.test.ts",
     "validate": "npm run build && streamdeck validate dist/com.simeo.codex-deck.sdPlugin",
     "validate:vsd-craft": "npm run build:vsd-craft && node scripts/validate-vsd-craft.mjs",
+    "configure:meeting-panels": "node scripts/configure-vsd-craft-meeting-panels.mjs",
     "install:vsd-craft:macos": "zsh scripts/install-vsd-craft-codex-deck-macos.sh",
     "pack": "npm run build && streamdeck pack dist/com.simeo.codex-deck.sdPlugin --force",
     "release:prepare": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/prepare-release.ps1"
@@ -43,6 +44,7 @@
     "@types/qrcode": "^1.5.6",
     "@types/ws": "^8.18.1",
     "esbuild": "0.28.1",
+    "sharp": "^0.35.3",
     "tsx": "^4.20.0",
     "typescript": "^5.9.0"
   }
