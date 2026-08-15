@@ -1,200 +1,176 @@
-# Codex Deck
+# Codex Deck M18
 
-> This fork adds direct VSD Inside M18 support through `mirajazz`; OpenDeck and Elgato hardware are not required for that mode. See [M18 setup](docs/M18.md), [ニーズ](ニーズ.md), [修正方針](修正方針.md), and [実行方針](実行方針.md).
+VSD Inside M18を、Windows版Codex Desktopの**Codex Micro操作デバイス**として使うためのOSSプロジェクトです。
 
-Codex Deck brings the Codex Micro control model to an Elgato Stream Deck. It mirrors Codex's six native agent slots and sends Codex's own Micro events for actions, joystick directions, encoder clicks, reasoning effort, and official keycap commands. It does not type text or depend on global hotkeys.
+上流の[Codex Deck](https://github.com/dazer1234/codex-stream-deck)が持つCodex Micro接続・状態取得・描画・イベント送信機能を維持し、M18とのUSB HID通信だけを[mirajazz](https://crates.io/crates/mirajazz)ベースの小さなアダプターで追加しています。
 
 > [!IMPORTANT]
-> This is an independent community project. It is not made, supported, or endorsed by OpenAI or Elgato. It uses undocumented Codex desktop internals and may need an update after a Codex release.
+> OpenAI、Codex Deck、M18メーカーによる公式製品ではありません。Codex Desktopの非公開内部インターフェースを利用するため、Codexの更新後に追従修正が必要になる可能性があります。
 
-![Six public agent-tile states in Codex-aligned dark mode](docs/assets/agent-status-preview-dark.svg)
+## 特徴
 
-## Choose your setup
+- M18の15個のLCDキーと下段3ボタンからCodex Microの全操作を実行
+- 6つのCodexタスク状態をLCDへ同期表示
+- Codex Micro固有のFast、Approve、Reject、Fork、Dictation、Sendをそのまま送信
+- Plan、Back、Forward、SidebarとReasoning変更に対応
+- Codex Microのエンコーダ押下にも対応
+- CodexまたはUSB切断後に再接続する常駐watcherを同梱
+- キー入力を診断ログへ記録
+- M18のファームウェア、Codex Desktop本体、USBドライバーを改変しない
+- OpenDeck、Elgato Stream Deck、仮想HID、キーボードショートカットは不要
 
-The same Stream Deck plugin package works in all three modes. Install only the launcher and configuration needed for your setup.
+## 対応機器
 
-| Setup | Stream Deck software | Codex controlled | Guide |
-|---|---|---|---|
-| Windows only | Windows | Local Windows Codex | [Windows setup](docs/WINDOWS.md) |
-| Mac only | macOS | Local Mac Codex | [macOS setup](docs/MACOS.md) |
-| Windows + Mac | Windows | Both apps; six agents are merged | [Multi-host setup](docs/MULTI_HOST.md) |
-| iPhone companion | iOS 17+ | Private Mac and/or Windows nodes | [iPhone app](docs/IOS.md) · [Install from source](docs/IOS_INSTALL.md) |
+現在のM18アダプターは、次のUSB IDを持つ実機だけを受け付けます。
 
-Windows-only and Mac-only mode have no relay, no second computer dependency, and no host badges. Multi-host mode is optional and can be disabled without changing the local bridge on either machine.
+| 項目 | 値 |
+|---|---|
+| 製品 | VSD Inside M18 / HOTSPOTEKUSB HID DEMO |
+| Vendor ID | `0x5548` |
+| Product ID | `0x1000` |
+| LCDキー | 15 |
+| 下段ボタン | 3 |
 
-## Features
+## キー割当
 
-- Six dynamic agent keys using the source and assignments selected in **Codex Settings > Codex Micro**.
-- Live idle, working, unread completion, approval/input, error, and empty states.
-- Codex-aligned light and dark rendering with restrained status animation.
-- Native key-down/key-up handling for Micro slots `ACT06` through `ACT12`.
-- Native joystick up, right, down, left, and encoder click.
-- Dedicated reasoning-effort up/down buttons with press-and-hold repeat.
-- Live usage controls: a configurable circular 5-hour/weekly limit key and a two-window overview.
-- A centered reset-credit counter with a deliberate 1.2-second hold before an applicable credit can be consumed.
-- A local `codex://threads/new` action for a new task.
-- Standalone actions for all official single-size keycaps, resolved from the installed Codex build at runtime.
-- Optional local loading of official keycap SVGs; those protected files are never included in this repository or its releases.
-- Optional authenticated SSH/Tailscale relay for one Stream Deck controlling Windows and Mac Codex together.
-- Per-host health on the Windows/Mac target key, with last-known agent tiles visibly marked when native desktop signals are uncertain or the relay is offline.
-- Native SwiftUI iPhone companion with dual-host agents, usage, reset credits, and authenticated Micro controls over pinned-TLS Nearby Wi-Fi or private Tailscale HTTPS.
+| M18入力 | Codex Micro機能 |
+|---|---|
+| LCD 1–6 | Agent 1–6 |
+| LCD 7 | Fast |
+| LCD 8 | Approve |
+| LCD 9 | Reject |
+| LCD 10 | Fork |
+| LCD 11 | Dictation |
+| LCD 12 | Send |
+| LCD 13 | Plan（Joystick Up） |
+| LCD 14 | Back（Joystick Left） |
+| LCD 15 | Forward（Joystick Right） |
+| 下段左 | Sidebar（Joystick Down） |
+| 下段中央・短押し | Reasoningを1段下げる |
+| 下段中央・500ms以上長押し | Encoder press。解放時にEncoder release |
+| 下段右 | Reasoningを1段上げる |
 
-## Requirements
+Codex Microには、エンコーダ押下を別に数えると19種類の論理ジェスチャがあります。M18は18ボタンなので、下段中央だけ短押しと長押しを使い分けます。
 
-- Codex desktop on the computer being controlled.
-- Elgato Stream Deck 6.6 or newer on the computer connected to the Stream Deck.
-- Node.js 20 or newer for the platform launcher.
-- Windows 10+ or macOS 13+.
-- Tested hardware: standard 15-key Stream Deck MK.2.
+## 仕組み
 
-Other Stream Deck models may work, but the included layout and physical-device testing target the normal 5×3 MK.2.
-
-## Quick install
-
-1. Download `com.simeo.codex-deck.streamDeckPlugin` from the matching [GitHub release](https://github.com/dazer1234/codex-stream-deck/releases/latest) and open it on the computer running Stream Deck.
-2. Download only the launcher for that computer:
-   - Windows: `codex-deck-launcher-windows-vX.Y.Z.zip`
-   - macOS: `codex-deck-launcher-macos-vX.Y.Z.zip`
-3. Follow [Windows](docs/WINDOWS.md), [macOS](docs/MACOS.md), or [Windows + Mac](docs/MULTI_HOST.md).
-4. In **Codex Settings > Codex Micro**, choose the agent source, action assignments, joystick actions, and encoder behavior.
-5. Build the two Stream Deck pages below.
-
-The iPhone companion is currently source-only: **a Mac with Xcode is required
-to build, sign, and install it**, even when the phone will control only a
-Windows Codex node. There is no App Store, TestFlight, or pre-signed IPA build
-yet. After installation, the Mac does not need to stay online unless it is one
-of the computers being controlled. Nearby pairing works on the same private
-Wi-Fi without Tailscale; add Tailscale for private control away from home. See
-the [beginner installation guide](docs/IOS_INSTALL.md) and the
-[local Wi-Fi test](docs/IOS_LOCAL_WIFI.md).
-
-In Windows + Mac mode, choose the same agent-source mode in both Codex apps when you want both native Pinned lists or both sets of Individual assignments to contribute. Pinned tasks are interleaved fairly. For Individual assignments, the Stream Deck computer wins when both apps assign different tasks to one button, while the other computer fills empty slots. Mirrored copies of the same task are shown only once. See [Multi-host behavior](docs/MULTI_HOST.md#agent-source-modes).
-
-## Recommended 15-key layout
-
-This is the actual polished two-page layout used for the MK.2. It keeps the six live agents on the main page and puts lower-frequency navigation/reasoning controls on page 2.
-
-> This layout is only a recommendation and a practical starting point. Every action, position, page, and profile can be customized freely to match your own workflow; Codex Deck does not require this exact arrangement.
-
-### Page 1 — agents and daily actions
-
-| Agent 1 | Agent 2 | Agent 3 | Agent 4 | Agent 5 |
-|---|---|---|---|---|
-| Agent 6 | Action 1 / Fast | Action 2 / Approve | Action 3 / Reject | Action 4 / Fork |
-| Action 5 / Push-to-talk | Keycap · Browser¹ | Stream Deck: Next Page | Reasoning Encoder Click | New Task |
-
-The action names describe the default Codex Micro setup. The keys always follow the live `ACT06`, `ACT07`, `ACT08`, `ACT09`, and `ACT10/11` assignments selected in Codex. ¹If you use `ACT12` / Send more often than Browser, put **Action 6 / Send** in that position instead.
-
-### Page 2 — navigation and reasoning
-
-| Windows / Mac Target + Health² | Empty | Joystick Up / Plan | Reasoning Down | Reasoning Up |
-|---|---|---|---|---|
-| Empty | Joystick Left / Back | Stream Deck: Previous Page | Joystick Right / Forward | Reasoning Encoder Click |
-| Stream Deck: Switch Profile³ | Empty | Joystick Down / Sidebar | Empty | New Task |
-
-²Use the target key only in Windows + Mac mode. In a single-computer setup, leave it empty or replace it with another keycap action. ³Configure Stream Deck's built-in **Switch Profile** action to return to your own standard profile; no user-specific profile ID is distributed.
-
-The page-navigation and profile-switch keys are built-in Stream Deck actions. All other named controls come from Codex Deck. Every official Codex Micro keycap is also exposed as a standalone action, so extra pages can be customized without changing the six synchronized Micro action slots.
-
-### Usage and reset controls
-
-![Usage limit, overview, and reset-credit controls](docs/assets/usage-controls-preview.svg)
-
-Add **Usage Limit** for the existing circular capacity display. Its Stream Deck property inspector can pin the key to **5 hours** or **Weekly**, while **Automatic** prefers 5 hours and falls back to weekly whenever Codex temporarily omits the shorter window. **Usage Overview** shows both windows as separate horizontal bars; a missing window stays visible as unavailable instead of being mistaken for zero capacity.
-
-**Rate Limit Reset** shows the number of credits Codex currently reports. The count remains centered inside the reset arrow and the action is dimmed only when no credit is available. Consuming a credit requires holding the key for 1.2 seconds; a short tap does nothing, and Codex's current applicability check still has to pass. This action uses Codex's current native usage client and is therefore subject to the same undocumented compatibility boundary as the Micro bridge.
-
-Usage and reset credits are account-scoped. In Windows + Mac mode these three keys therefore do not follow the Windows/Mac function-key target: they prefer the healthy local account snapshot and fall back to the paired host only when local usage data is unavailable.
-
-## Official keycap SVGs are not included
-
-The public source and release intentionally exclude OpenAI's Codex Micro keycap SVG files. The original agent tiles, status marks, glow system, animations, fallback labels, and plugin artwork are included.
-
-If you have the right to use the files already present in your own Codex installation, copy them outside the repository to:
-
-```text
-Windows: %LOCALAPPDATA%\CodexDeck\icons
-macOS:   ~/Library/Application Support/CodexDeck/icons
+```mermaid
+flowchart LR
+    M18["VSD Inside M18"] <-->|"USB HID"| Adapter["Rust M18 adapter<br/>mirajazz"]
+    Adapter <-->|"JSON Lines / stdio"| Runtime["Codex Deck M18 runtime"]
+    Runtime --> Controller["Upstream DeckController"]
+    Controller <-->|"CDP on 127.0.0.1"| Codex["Codex Desktop<br/>Codex Micro handlers"]
 ```
 
-Name each copy after its Codex keycap ID, such as `FAST.svg`, `APPR.svg`, `REJ.svg`, `SPLIT.svg`, or `MIC.svg`. Codex can inspect your local installation and copy the exact existing SVG files for you when explicitly instructed not to redraw, download, upload, publish, or commit them. See [Local icon setup](docs/ICON_SETUP.md) for the guarded workflow and complete filename list.
+Node.jsランタイムは上流Codex Deckの`DeckController`と`CodexMicroRendererBridge`を利用します。RustアダプターはM18の入力受信とLCD画像転送だけを担当します。
 
-## How it works
+## 必要環境
 
-```text
-Stream Deck key
-    -> Codex Deck plugin
-    -> loopback-only Chrome DevTools connection
-    -> Codex renderer host-event bus
-    -> native Codex Micro handler
-```
+- Windows 10以降
+- Codex Desktop
+- Node.js 20以降
+- Rust stable
+- Windows向けRustをビルドできるC++ツールチェーン
+- USB接続された対応M18
 
-The launcher enables a random Chrome DevTools port bound to `127.0.0.1`. The plugin discovers version-hashed renderer modules, reads the native Micro layout/state, and dispatches the same event families used by the Micro integration:
+## ビルド
 
-- `codex-micro-device-state-changed`
-- `codex-micro-hid-event`
-- `codex-micro-joystick-event`
-
-No virtual HID driver is installed and no Codex application file is patched. See [Architecture and security](docs/ARCHITECTURE.md).
-
-## Security and privacy
-
-- The Codex debug endpoint remains loopback-only and is never the multi-host relay endpoint.
-- CDP is privileged: another untrusted process running as the same local user could try to access it.
-- Codex Deck has no telemetry, cloud service, or update service.
-- Codex Deck reads exact local rollout filenames for ownership and a bounded recent tail for structural status tags plus numeric `token_count` fields. It does not parse or relay prompts, responses, project names, or other conversation content.
-- Optional SVGs stay in the user-local icons directory and are never uploaded.
-- Multi-host mode accepts only authenticated, typed Codex Deck commands over SSH or Tailscale; wildcard and arbitrary public-IP listeners are rejected.
-- Private relay tokens, local host state, logs, and personal paths are excluded by the release audit.
-
-Do not use the launcher while running untrusted local software. See [SECURITY.md](SECURITY.md).
-
-## Compatibility
-
-The current build was locally validated against:
-
-- Codex for Windows `26.715.8383.0`
-- Codex for macOS `26.715.70719` (`5650`)
-- Stream Deck `7.4.2.22730`
-- Windows `10.0.26220.0`
-- Node.js `24.13.0`
-- iPhone `iOS 27.0` (physical-device build and tests)
-- Standard 15-key Stream Deck MK.2
-
-The Windows physical-device path and the Windows+Mac relay were exercised on the real setup. The macOS launcher, watcher, native bridge, and plugin package are validated; a Stream Deck physically attached to the Mac has not yet been hardware-tested. These are tested versions, not strict maximums.
-
-## Troubleshooting
-
-Start with [Troubleshooting](docs/TROUBLESHOOTING.md). The important rule is: restart only the Stream Deck plugin/app for plugin updates. The macOS watcher never launches a closed Codex app; after a manual app start it permits at most one guarded recovery restart and opens a global cooldown before any later recovery.
-
-## Build and release validation
+PowerShellでプロジェクトフォルダを開き、次を実行します。
 
 ```powershell
 npm ci
 npm run check
 npm test
-npm run validate
-npm run pack
-npm run audit:release
+npm run build
+npm run build:m18
 ```
 
-`npm run release:prepare` creates a versioned local release-candidate directory with the plugin package, Windows launcher ZIP, and SHA-256 checksums. The macOS ZIP must be created on macOS with `scripts/package-macos-release.sh` so executable bits survive; pass that ZIP to `scripts/prepare-release.ps1 -MacArchivePath ...`.
+完成物は`dist\m18`に生成されます。
 
-For a four-component Stream Deck hotfix version, set
-`CODEX_DECK_RELEASE_VERSION=0.7.0.2` while running the macOS packager and pass
-`-ReleaseVersion 0.7.0.2` to `prepare-release.ps1`. The npm package keeps its
-SemVer-compatible prerelease form.
+## 接続確認
 
-Nothing is published automatically. See [CONTRIBUTING.md](CONTRIBUTING.md).
+実行前に、M18とCodexブリッジだけを検査できます。
 
-## Acknowledgements
+```powershell
+Set-Location .\dist\m18
+.\Start-CodexDeck-M18.ps1 -DryRun
+```
 
-The idea to explore a phone-native Codex Micro companion was inspired in part
-by the public mobile concept shared by [Shikhar (@xikhar)](https://x.com/xikhar).
-Codex Deck Mobile is an independent implementation built on this project's own
-authenticated bridge, native controls, and visual system; no source code or
-artwork from that concept is included.
+`-DryRun`はファームウェアや設定を変更しません。
 
-## License and trademarks
+## 実行
 
-Code and original artwork are licensed under [MIT](LICENSE). OpenAI, Codex, ChatGPT, Elgato, Stream Deck, and their marks/assets belong to their respective owners; third-party and user-supplied assets are not relicensed.
+Codex DesktopとM18を接続した状態で実行します。
+
+```powershell
+Set-Location .\dist\m18
+.\Start-CodexDeck-M18.ps1
+```
+
+Codex Desktopがブリッジなしで既に起動している場合は、Codexを通常終了してから再実行してください。明示的にCodexを再起動させる場合だけ`-ForceRestart`を使用します。
+
+```powershell
+.\Start-CodexDeck-M18.ps1 -ForceRestart
+```
+
+## 常駐運用
+
+`dist\m18`を固定したフォルダへ配置し、次のスクリプトをWindowsログオン時に起動するよう登録します。
+
+```powershell
+powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "C:\path\to\CodexDeck\M18\Watch-CodexDeck-M18.ps1"
+```
+
+watcherはランタイム終了後に再起動を試み、CodexやM18の再接続に追従します。配置後にフォルダを移動すると起動パスが無効になるため、先に固定配置してください。
+
+## ログ
+
+| ファイル | 内容 |
+|---|---|
+| `%LOCALAPPDATA%\CodexDeck\m18.log` | watcher、Codex接続、M18接続、描画同期 |
+| `%LOCALAPPDATA%\CodexDeck\m18-events.log` | `key_down` / `key_up`と物理キー番号 |
+| `%LOCALAPPDATA%\CodexDeck\codex-micro-bridge.json` | 現在のローカルCDPポート状態 |
+
+入力が反応しない場合は、最初に`m18-events.log`へイベントが増えているか確認してください。
+
+## 開発用コマンド
+
+```powershell
+npm run check       # TypeScript型検査
+npm test            # Nodeテスト一式
+npm run build       # 上流Codex Deckとランチャーをビルド
+npm run build:m18   # RustアダプターとM18ランタイムをビルド
+npm run start:m18   # ビルド済みM18ランタイムを直接起動
+```
+
+## 設計資料
+
+- [M18セットアップ](docs/M18.md)
+- [Codex Micro版ニーズ](docs/codex-micro-m18/ニーズ.md)
+- [Codex Micro版修正方針](docs/codex-micro-m18/修正方針.md)
+- [Codex Micro版実行方針](docs/codex-micro-m18/実行方針.md)
+- [初期ニーズ](ニーズ.md)
+- [初期修正方針](修正方針.md)
+- [初期実行方針](実行方針.md)
+- [セキュリティ方針](SECURITY.md)
+
+## 上流から継承している機能
+
+このリポジトリは上流Codex DeckのStream Deck、マルチホスト、iPhone companion実装も保持しています。ただし、このREADMEの導入手順と実機検証範囲はWindows＋M18です。
+
+上流のiPhone companionはソース配布のみです。A Mac with Xcode is required to build and install it, even when the phone will control only Windows. App Store、TestFlight、署名済みIPAでの配布はありません。詳細は[上流由来のiPhone導入手順](docs/IOS_INSTALL.md)を参照してください。
+
+## 謝辞
+
+上流Codex Deckのモバイル構想は、[Shikhar (@xikhar)](https://x.com/xikhar)が公開したコンセプトから着想を得ています。Codex Deck Mobileは上流プロジェクト独自のブリッジ、操作系、ビジュアルを使ったindependent implementationであり、そのコンセプトのソースコードや画像は含みません。
+
+## OSSとライセンス
+
+- 上流Codex DeckとTypeScript側の変更：MIT License
+- M18アダプター：GPL-3.0-only
+- mirajazz：MPL-2.0
+- M18プロトコル検証情報の参照元：[ibanks42/opendeck-m18](https://github.com/ibanks42/opendeck-m18)（GPL-3.0）
+
+詳細は[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)、[MIT LICENSE](LICENSE)、[M18 adapter GPL-3.0 LICENSE](m18-adapter/LICENSE)を参照してください。
+
+Codex、OpenAI、Stream Deck、Elgatoおよび各製品名・商標は、それぞれの権利者に帰属します。
