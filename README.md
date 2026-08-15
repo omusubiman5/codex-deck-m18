@@ -1,11 +1,67 @@
 # Codex Deck M18
 
-VSD Inside M18を、Windows版Codex Desktopの**Codex Micro操作デバイス**として使うためのOSSプロジェクトです。
+VSD Inside M18を、Windows版またはmacOS版Codex Desktopの**Codex Micro操作デバイス**として使うためのOSSプロジェクトです。現在の推奨構成はメーカー標準アプリのVSD Craftです。Linuxは対象外です。
 
-上流の[Codex Deck](https://github.com/dazer1234/codex-stream-deck)が持つCodex Micro接続・状態取得・描画・イベント送信機能を維持し、M18とのUSB HID通信だけを[mirajazz](https://crates.io/crates/mirajazz)ベースの小さなアダプターで追加しています。
+上流の[Codex Deck](https://github.com/dazer1234/codex-stream-deck)が持つCodex Micro接続・状態取得・描画・イベント送信機能を維持し、M18のUSB通信、LCD転送、シーン管理はVSD Craftへ任せます。旧mirajazz直接接続方式もロールバック用としてソースに残していますが、VSD Craftと同時には起動しません。
 
 > [!IMPORTANT]
 > OpenAI、Codex Deck、M18メーカーによる公式製品ではありません。Codex Desktopの非公開内部インターフェースを利用するため、Codexの更新後に追従修正が必要になる可能性があります。
+
+## 対応デバイスの購入情報
+
+- [VSDINSIDE M18（Amazon.co.jp）](https://www.amazon.co.jp/dp/B0GT8Q8KGQ)
+- 2026年8月16日時点：`￥8,999`、さらに`￥2,001 OFF`クーポン表示あり
+
+価格、クーポン、在庫、適用条件は変更される場合があります。購入画面で最新情報を確認してください。このリンクはAmazonアソシエイトリンクではありません。
+
+## 推奨構成：VSD Craft転用
+
+```text
+Codex Desktop
+    ↕ Codex Micro / CDP
+Codex Deckプラグイン
+    ↕ VSD公式SDK互換WebSocket
+VSD Craft
+    ↕ メーカー標準USB制御
+VSD Inside M18
+```
+
+VSD Craftの標準UIでキーをドラッグ配置します。実機には次の3環境を設定済みです。
+
+- 下左：`Codex Micro` — Agent 1～6、FAST、APPR、REJ、SPLIT、MIC、CODEX、上・左・右
+- 下中央：`Codex Tools` — Reasoning、New Task、使用量、DIFF、Browser、Settingsなど
+- 下右：`デフォルトシーン` — M18メーカー標準面
+
+下3物理ボタンにはVSD Craft標準の`シーンシフト`だけを設定し、Codex操作は割り当てません。3環境のどの面からでも同じ位置へ直接切り替わります。
+
+ビルドと検証：
+
+```powershell
+npm run validate:vsd-craft
+```
+
+Windowsへの導入：
+
+```powershell
+.\scripts\Install-VSDCraft-CodexDeck.ps1 `
+  -VSDCraftInstallerPath 'C:\path\to\VSD-Craft-Installer_Windows.exe' `
+  -Launch
+```
+
+macOSへの導入（VSD Craft公式macOS版とNode.js 20以上を先に導入）：
+
+```zsh
+chmod +x scripts/install-vsd-craft-codex-deck-macos.sh
+./scripts/install-vsd-craft-codex-deck-macos.sh
+```
+
+macOS版はVSD Craftの標準保存先`~/Library/Application Support/HotSpot/StreamDock/plugins`へプラグインを配置し、既存版を`~/Library/Application Support/CodexDeck/backups`へ退避します。Codex接続には既存のmacOS LaunchAgentをそのまま使用します。詳細は[macOS導入手順](docs/vsd-craft/MACOS.md)を参照してください。
+
+詳細は[ニーズ](docs/vsd-craft/ニーズ.md)、[修正方針](docs/vsd-craft/修正方針.md)、[実行方針](docs/vsd-craft/実行方針.md)を参照してください。
+
+## 旧方式：M18直接接続
+
+以下はロールバック用のmirajazz直接接続方式です。VSD Craft運用時には起動しません。
 
 ## Codex Deckとは
 
@@ -35,8 +91,9 @@ Codex Deckの機能はコードから削除していません。ただしM18の1
 |---|---:|---:|
 | Agent 1–6とライブ状態 | 維持 | あり |
 | `ACT06`～`ACT12` | 維持 | あり |
-| Joystick上下左右 | 維持 | あり |
-| Encoder押下／Reasoning増減 | 維持 | あり |
+| Joystick上下左右 | 維持 | 上・左・右のみ |
+| Encoder押下／Reasoning増減 | 維持 | なし |
+| Codex環境アクション1～3 | 維持 | 下段3ボタン |
 | 公式Keycap単独コマンド | 維持 | なし |
 | Usage Limit／Usage Overview | 維持 | なし |
 | Rate Limit Reset | 維持 | なし |
@@ -49,11 +106,11 @@ Codex Deckの機能はコードから削除していません。ただしM18の1
 
 ## M18版の特徴
 
-- M18の15個のLCDキーと下段3ボタンからCodex Microの全操作を実行
+- M18の15個のLCDキーでCodex Microの主要操作を実行
+- 下段3ボタンはCodex Microと同じネイティブコマンド`environmentAction1`～`environmentAction3`を実行
 - 6つのCodexタスク状態をLCDへ同期表示
 - Codex Micro固有のFast、Approve、Reject、Fork、Dictation、Sendをそのまま送信
-- Plan、Back、Forward、SidebarとReasoning変更に対応
-- Codex Microのエンコーダ押下にも対応
+- Plan、Back、Forwardに対応
 - CodexまたはUSB切断後に再接続する常駐watcherを同梱
 - キー入力を診断ログへ記録
 - M18のファームウェア、Codex Desktop本体、USBドライバーを改変しない
@@ -85,12 +142,11 @@ Codex Deckの機能はコードから削除していません。ただしM18の1
 | LCD 13 | Plan（Joystick Up） |
 | LCD 14 | Back（Joystick Left） |
 | LCD 15 | Forward（Joystick Right） |
-| 下段左 | Sidebar（Joystick Down） |
-| 下段中央・短押し | Reasoningを1段下げる |
-| 下段中央・500ms以上長押し | Encoder press。解放時にEncoder release |
-| 下段右 | Reasoningを1段上げる |
+| 下段左 | Codex環境アクション1（`environmentAction1`） |
+| 下段中央 | Codex環境アクション2（`environmentAction2`） |
+| 下段右 | Codex環境アクション3（`environmentAction3`） |
 
-Codex Microには、エンコーダ押下を別に数えると19種類の論理ジェスチャがあります。M18は18ボタンなので、下段中央だけ短押しと長押しを使い分けます。
+下段3ボタンはM18内のページやプロファイルを切り替えません。Codex Desktopが登録している環境アクションのコマンドIDを、Codex Microと同じコマンドランナーへ渡します。各スロットが何をするかはCodex側の設定に従います。
 
 LCD 7～12は名称をハードコードしたマクロではなく、Codex Microのアクションスロットです。Codex側で割当を変更すると、Codex Deckが取得する表示と実行内容も追従します。表中の名称はCodex Microの既定構成を示します。
 

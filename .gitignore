@@ -1,5 +1,6 @@
 node_modules/
 dist/
+dist-vsd-craft/
 release/
 m18-adapter/target/
 outputs/

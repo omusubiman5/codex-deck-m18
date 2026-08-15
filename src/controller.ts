@@ -7,7 +7,7 @@ import {
 } from "./control-target.js";
 import { CodexRelayClient, readRelayClientConfig } from "./codex-relay-client.js";
 import { CodexRelayServer, readRelayServerConfig } from "./codex-relay-server.js";
-import { CodexMicroRendererBridge } from "./codex-micro-renderer-bridge.js";
+import { CodexMicroRendererBridge, type EnvironmentActionSlot } from "./codex-micro-renderer-bridge.js";
 import { getOrCreateHostIdentity } from "./host-identity.js";
 import type { OfficialKeycapId } from "./keycaps.js";
 import { HostActivityIndex, type HostSnapshot, type RelayCommand } from "./relay-protocol.js";
@@ -21,14 +21,14 @@ import type {
   CodexHost, HostHealth, MicroActionSlot, MicroDirection, MicroSnapshot, ReasoningAdjustment,
   RoutedAgentSlot, UsageLimitMode, UsageWindowKind
 } from "./types.js";
-import { selectAccountUsageSource, selectUsageWindow, type AccountUsageSource } from "./usage.js";
+import { selectAccountUsageSource, selectUsageWindow, usageLabel, type AccountUsageSource } from "./usage.js";
 import type { DeckRuntime, DeckSurfaceAction } from "./deck-runtime.js";
 
 export type FixedIconSource =
   | { kind: "local"; keycapId: string }
   | { kind: "builtin"; name: BuiltinIconName };
 
-type FixedIconRegistration = { action: DeckSurfaceAction; source: FixedIconSource };
+type FixedIconRegistration = { action: DeckSurfaceAction; id: string; source: FixedIconSource };
 type AgentRegistration = { action: DeckSurfaceAction; slot: number };
 type MicroActionRegistration = { action: DeckSurfaceAction; slot: MicroActionSlot };
 type UsageLimitRegistration = { action: DeckSurfaceAction; mode: UsageLimitMode };
@@ -38,6 +38,20 @@ type ContextRingSettings = { showContextRings?: boolean };
 const USER_ICON_ROOT = join(codexDeckStateRoot(), "icons");
 const LOCAL_MOBILE_CONFIG = "mobile-local-relay-server.json";
 const RESET_HOLD_MS = 1_200;
+const PACKAGED_ICON_ROOT = new URL("../static/imgs/actions/", import.meta.url);
+const MICRO_ICON_NAMES: Record<MicroActionSlot, string> = {
+  ACT06: "micro-07-fast", ACT07: "micro-08-approve", ACT08: "micro-09-reject",
+  ACT09: "micro-10-split", ACT10_ACT11: "micro-11-microphone", ACT12: "micro-12-codex"
+};
+const FIXED_ICON_NAMES: Record<string, string> = {
+  "joystick-up": "micro-13-joystick-up", "joystick-left": "micro-14-joystick-left",
+  "joystick-right": "micro-15-joystick-right", "joystick-down": "tools-01-sidebar-down",
+  reasoning: "tools-02-reasoning-click", "reasoning-decrease": "tools-03-reasoning-down",
+  "reasoning-increase": "tools-04-reasoning-up", "new-task": "tools-05-new-task",
+  "keycap-TERM": "tools-10-terminal", "keycap-DWN": "tools-11-copy-chat-markdown",
+  "keycap-DEL": "tools-12-archive-chat", "keycap-DIFF": "tools-13-diff-review",
+  "keycap-NAV": "tools-14-browser", "keycap-SETUP": "tools-15-settings"
+};
 
 export class DeckController {
   private readonly microBridge: CodexMicroRendererBridge;
@@ -45,6 +59,7 @@ export class DeckController {
   private readonly microActions = new Map<string, MicroActionRegistration>();
   private readonly fixedActions = new Map<string, FixedIconRegistration>();
   private readonly keycapImages = new Map<string, Promise<string | null>>();
+  private readonly packagedImages = new Map<string, Promise<string | null>>();
   private readonly lastImages = new Map<string, string>();
   private readonly hostToggleActions = new Map<string, DeckSurfaceAction>();
   private readonly usageLimitActions = new Map<string, UsageLimitRegistration>();
@@ -203,8 +218,8 @@ export class DeckController {
   }
 
   registerFixedAction(id: string, action: DeckSurfaceAction, source: FixedIconSource): void {
-    this.fixedActions.set(action.id, { action, source });
-    void this.renderFixedAction({ action, source });
+    this.fixedActions.set(action.id, { action, id, source });
+    void this.renderFixedAction({ action, id, source });
   }
 
   unregisterFixedAction(action: ActionIdentity): void {
@@ -327,6 +342,10 @@ export class DeckController {
     await this.sendToTarget({ kind: "keycap", keycapId }, () => this.microBridge.runKeycap(keycapId));
   }
 
+  async runEnvironmentAction(slot: EnvironmentActionSlot): Promise<void> {
+    await this.microBridge.runEnvironmentAction(slot);
+  }
+
   async createTask(): Promise<void> {
     if (this.isRemoteTarget()) await this.sendRemote({ kind: "keycap", keycapId: "NEW" });
     else await openCodexThread("new");
@@ -429,7 +448,9 @@ export class DeckController {
     const status = agent ? visualStatusFromMicro(agent.status) : "empty";
     const theme = this.targetSnapshot()?.theme ?? this.localSnapshot?.snapshot.theme ?? "dark";
     const hostBadge = agent && this.relayClient ? (agent.host.platform === "darwin" ? "M" : "W") : undefined;
-    await this.setImage(action, renderAgentKey(
+    const effectiveStatus = health.state === "ready" ? status : health.state === "connecting" ? "input" : "error";
+    const monbra = await this.packagedImage(`micro-0${slot + 1}-agent-${slot + 1}-status-${effectiveStatus}`);
+    await this.setImage(action, monbra ?? renderAgentKey(
       slot, title, status, agent?.selected ?? false, this.animationFrame, theme, hostBadge,
       health.state, agent?.contextUsedPercent, this.showContextRings));
   }
@@ -447,6 +468,11 @@ export class DeckController {
   }
 
   private async renderMicroAction({ action, slot }: MicroActionRegistration): Promise<void> {
+    const monbra = await this.packagedImage(MICRO_ICON_NAMES[slot]);
+    if (monbra) {
+      await this.setImage(action, monbra);
+      return;
+    }
     const snapshot = this.targetSnapshot();
     const keycapId = snapshot?.layout.slots[slot]?.keycapId;
     if (!keycapId) return;
@@ -455,6 +481,12 @@ export class DeckController {
   }
 
   private async renderFixedAction(registration: FixedIconRegistration): Promise<void> {
+    const monbraName = FIXED_ICON_NAMES[registration.id];
+    const monbra = monbraName ? await this.packagedImage(monbraName) : null;
+    if (monbra) {
+      await this.setImage(registration.action, monbra);
+      return;
+    }
     const theme = this.targetSnapshot()?.theme ?? "dark";
     const image = registration.source.kind === "builtin"
       ? renderBuiltinKeycap(registration.source.name, theme)
@@ -465,7 +497,9 @@ export class DeckController {
   private async renderHostToggle(action: DeckSurfaceAction): Promise<void> {
     const label = this.targetPlatform === "darwin" ? "MAC" : "WIN";
     const theme = this.targetSnapshot()?.theme ?? "dark";
-    await this.setImage(action, renderHostTargetKey(label, this.targetHealth().state, theme));
+    const health = this.targetHealth().state;
+    const monbra = await this.packagedImage("tools-06-target-health");
+    await this.setImage(action, monbra ?? renderHostTargetKey(label, health, theme), monbra ? `${label}\n${health.toUpperCase()}` : "");
   }
 
   private async renderUsageLimit({ action, mode }: UsageLimitRegistration): Promise<void> {
@@ -473,12 +507,19 @@ export class DeckController {
     const snapshot = source.snapshot;
     const window = selectUsageWindow(snapshot?.usage, mode);
     const requestedKind: UsageWindowKind = mode === "auto" ? (window?.kind ?? "other") : mode;
-    await this.setImage(action, renderUsageLimitKey(window, requestedKind, snapshot?.theme ?? "dark", source.health.state));
+    const monbra = await this.packagedImage("tools-07-usage-limit");
+    await this.setImage(action, monbra ?? renderUsageLimitKey(window, requestedKind, snapshot?.theme ?? "dark", source.health.state),
+      monbra ? `${usageLabel(requestedKind)}\n${window ? `${Math.round(window.remainingPercent)}%` : "--"}` : "");
   }
 
   private async renderUsageOverview(action: DeckSurfaceAction): Promise<void> {
     const source = this.accountUsageSource();
-    await this.setImage(action, renderUsageOverviewKey(source.snapshot?.usage?.windows ?? [], source.snapshot?.theme ?? "dark", source.health.state));
+    const windows = source.snapshot?.usage?.windows ?? [];
+    const fiveHour = windows.find((window) => window.kind === "five-hour");
+    const weekly = windows.find((window) => window.kind === "weekly");
+    const monbra = await this.packagedImage("tools-08-usage-overview");
+    await this.setImage(action, monbra ?? renderUsageOverviewKey(windows, source.snapshot?.theme ?? "dark", source.health.state),
+      monbra ? `5H ${fiveHour ? Math.round(fiveHour.remainingPercent) : "--"}%\nWK ${weekly ? Math.round(weekly.remainingPercent) : "--"}%` : "");
   }
 
   private async renderRateLimitReset(action: DeckSurfaceAction): Promise<void> {
@@ -486,12 +527,14 @@ export class DeckController {
     const snapshot = source.snapshot;
     const startedAt = this.resetHolds.get(action.id);
     const progress = startedAt == null ? 0 : Math.min(1, (Date.now() - startedAt) / RESET_HOLD_MS);
-    await this.setImage(action, renderRateLimitResetKey(
-      snapshot?.usage?.resetCreditsAvailable ?? null,
+    const credits = snapshot?.usage?.resetCreditsAvailable ?? null;
+    const monbra = await this.packagedImage("tools-09-rate-limit-reset");
+    await this.setImage(action, monbra ?? renderRateLimitResetKey(
+      credits,
       progress,
       snapshot?.theme ?? "dark",
       source.health.state
-    ));
+    ), monbra ? `RESET\n${credits == null ? "--" : credits}` : "");
   }
 
   private async renderResetHolds(): Promise<void> {
@@ -499,6 +542,19 @@ export class DeckController {
       const action = this.rateLimitResetActions.get(id);
       if (action) await this.renderRateLimitReset(action);
     }));
+  }
+
+  private packagedImage(name: string): Promise<string | null> {
+    const cached = this.packagedImages.get(name);
+    if (cached) return cached;
+    const pending = readFile(new URL(`${name}.png`, PACKAGED_ICON_ROOT))
+      .then((bytes) => `data:image/png;base64,${bytes.toString("base64")}`)
+      .catch((error) => {
+        this.runtime.logger.warn(`Packaged Monbra icon ${name} unavailable: ${String(error)}`);
+        return null;
+      });
+    this.packagedImages.set(name, pending);
+    return pending;
   }
 
   private targetHealth(): HostHealth {
@@ -564,10 +620,11 @@ export class DeckController {
     return target;
   }
 
-  private async setImage(action: DeckSurfaceAction, image: string): Promise<void> {
-    if (this.lastImages.get(action.id) === image) return;
-    await Promise.all([action.setImage(image), action.setTitle("")]);
-    this.lastImages.set(action.id, image);
+  private async setImage(action: DeckSurfaceAction, image: string, title = ""): Promise<void> {
+    const signature = `${title}\n${image}`;
+    if (this.lastImages.get(action.id) === signature) return;
+    await Promise.all([action.setImage(image), action.setTitle(title)]);
+    this.lastImages.set(action.id, signature);
   }
 
   private renderUsageAction(label: string, action: DeckSurfaceAction, render: () => Promise<void>): void {

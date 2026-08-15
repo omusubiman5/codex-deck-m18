@@ -3,6 +3,15 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { renderAgentSvg, renderBuiltinKeycap, renderFallbackKeycap, renderHostTargetKey, renderImportedKeycap, SIGNAL_COLORS } from "../src/render.js";
 
+test("agent status colors match Codex Micro exactly", () => {
+  const expected = {
+    empty: "#000000", idle: "#FFFFFF", thinking: "#304FFE",
+    complete: "#00FF4C", input: "#FF6D00", error: "#FF0033"
+  };
+  assert.deepEqual(SIGNAL_COLORS.light, expected);
+  assert.deepEqual(SIGNAL_COLORS.dark, expected);
+});
+
 test("dark agent tiles use Codex-like charcoal surfaces without pure black", () => {
   const svg = renderAgentSvg(0, "Building dark mode", "thinking", true, 4, "dark");
   assert.match(svg, /data-theme="dark"/);

@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { DeckController, type FixedIconSource } from "./controller.js";
 import { codexDeckStateRoot } from "./codex-deck-paths.js";
 import type { DeckRuntime, DeckSurfaceAction } from "./deck-runtime.js";
-import { createTapOrHoldBinding, type Binding } from "./m18-bindings.js";
+import type { Binding } from "./m18-bindings.js";
 import { M18AdapterClient } from "./m18-adapter-client.js";
 import type { MicroActionSlot, MicroDirection } from "./types.js";
 
@@ -54,12 +54,8 @@ const joystick = (direction: MicroDirection, icon?: FixedIconSource): Binding =>
   down: () => controller.sendJoystick(direction, 1),
   up: () => controller.sendJoystick(direction, 0)
 });
-const encoderGesture = (): Binding => createTapOrHoldBinding({
-  holdMs: 500,
-  tap: () => controller.adjustReasoning("decrease"),
-  holdDown: () => controller.sendEncoder(1),
-  holdUp: () => controller.sendEncoder(0),
-  onError: (error) => logger.error(`M18 encoder gesture failed: ${String(error)}`)
+const environmentAction = (slot: 1 | 2 | 3): Binding => ({
+  down: () => controller.runEnvironmentAction(slot)
 });
 
 bindings = [
@@ -68,7 +64,7 @@ bindings = [
   joystick("up", { kind: "local", keycapId: "BRCH" }),
   joystick("left", { kind: "builtin", name: "back" }),
   joystick("right", { kind: "builtin", name: "forward" }),
-  joystick("down"), encoderGesture(), { down: () => controller.adjustReasoning("increase") }
+  environmentAction(1), environmentAction(2), environmentAction(3)
 ];
 
 for (const [key, binding] of bindings.entries()) binding.register?.(actions[key]!);
