@@ -15,6 +15,7 @@
   },
   "scripts": {
     "build": "node scripts/build.mjs && node scripts/build-launcher.mjs",
+    "build:vsd-craft": "npm run build && node scripts/build-vsd-craft.mjs",
     "build:m18": "cargo build --release --manifest-path m18-adapter/Cargo.toml && node scripts/build-m18.mjs",
     "start:m18": "node dist/m18/codex-deck-m18.mjs",
     "docs:preview": "tsx scripts/generate-doc-preview.ts",
@@ -24,6 +25,7 @@
     "check": "tsc --noEmit",
     "test": "tsx --test test/*.test.ts",
     "validate": "npm run build && streamdeck validate dist/com.simeo.codex-deck.sdPlugin",
+    "validate:vsd-craft": "npm run build:vsd-craft && node scripts/validate-vsd-craft.mjs",
     "pack": "npm run build && streamdeck pack dist/com.simeo.codex-deck.sdPlugin --force",
     "release:prepare": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/prepare-release.ps1"
   },

@@ -5,12 +5,12 @@ export type BuiltinIconName = "back" | "forward" | "sidebar" | "home" | "navigat
 
 export const SIGNAL_COLORS: Record<ThemeMode, Record<AgentVisualStatus, string>> = {
   light: {
-    empty: "#606B75", idle: "#FFFFFF", thinking: "#006BFF",
-    complete: "#21D653", input: "#FF7A1A", error: "#FF2447"
+    empty: "#000000", idle: "#FFFFFF", thinking: "#304FFE",
+    complete: "#00FF4C", input: "#FF6D00", error: "#FF0033"
   },
   dark: {
-    empty: "#707B85", idle: "#F2F2EE", thinking: "#1683FF",
-    complete: "#35D86B", input: "#FF9A3D", error: "#FF4B61"
+    empty: "#000000", idle: "#FFFFFF", thinking: "#304FFE",
+    complete: "#00FF4C", input: "#FF6D00", error: "#FF0033"
   }
 };
 
@@ -50,7 +50,7 @@ export function renderAgentSvg(_slot: number, title: string, status: AgentVisual
   const color = SIGNAL_COLORS[theme][status];
   const [line1, line2] = splitTitle(title);
   const pulse = 0.70 + 0.30 * ((Math.sin((phase / 12) * Math.PI * 2) + 1) / 2);
-  const glowColor = status === "idle" ? (theme === "dark" ? "#D5D9DC" : "#AAB4BB") : color;
+  const glowColor = color;
   const themeBoost = theme === "dark" ? .08 : 0;
   const glowOpacity = Math.min(1, (status === "empty" ? .12 : status === "idle" ? .18 : status === "thinking" ? .50 + pulse * .16 : status === "input" ? .42 + pulse * .12 : .52) + themeBoost);
   const surfaceOpacity = (status === "empty" ? .04 : status === "idle" ? .06 : status === "thinking" ? .30 + pulse * .12 : status === "input" ? .24 + pulse * .08 : .28) + (theme === "dark" && status !== "empty" ? .06 : 0);

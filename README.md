@@ -1,11 +1,51 @@
 # Codex Deck M18
 
-VSD Inside M18を、Windows版Codex Desktopの**Codex Micro操作デバイス**として使うためのOSSプロジェクトです。
+VSD Inside M18を、Windows版Codex Desktopの**Codex Micro操作デバイス**として使うためのOSSプロジェクトです。現在の推奨構成はメーカー標準アプリのVSD Craftです。
 
-上流の[Codex Deck](https://github.com/dazer1234/codex-stream-deck)が持つCodex Micro接続・状態取得・描画・イベント送信機能を維持し、M18とのUSB HID通信だけを[mirajazz](https://crates.io/crates/mirajazz)ベースの小さなアダプターで追加しています。
+上流の[Codex Deck](https://github.com/dazer1234/codex-stream-deck)が持つCodex Micro接続・状態取得・描画・イベント送信機能を維持し、M18のUSB通信、LCD転送、シーン管理はVSD Craftへ任せます。旧mirajazz直接接続方式もロールバック用としてソースに残していますが、VSD Craftと同時には起動しません。
 
 > [!IMPORTANT]
 > OpenAI、Codex Deck、M18メーカーによる公式製品ではありません。Codex Desktopの非公開内部インターフェースを利用するため、Codexの更新後に追従修正が必要になる可能性があります。
+
+## 推奨構成：VSD Craft転用
+
+```text
+Codex Desktop
+    ↕ Codex Micro / CDP
+Codex Deckプラグイン
+    ↕ VSD公式SDK互換WebSocket
+VSD Craft
+    ↕ メーカー標準USB制御
+VSD Inside M18
+```
+
+VSD Craftの標準UIでキーをドラッグ配置します。実機には次の3環境を設定済みです。
+
+- 下左：`Codex Micro` — Agent 1～6、FAST、APPR、REJ、SPLIT、MIC、CODEX、上・左・右
+- 下中央：`Codex Tools` — Reasoning、New Task、使用量、DIFF、Browser、Settingsなど
+- 下右：`デフォルトシーン` — M18メーカー標準面
+
+下3物理ボタンにはVSD Craft標準の`シーンシフト`だけを設定し、Codex操作は割り当てません。3環境のどの面からでも同じ位置へ直接切り替わります。
+
+ビルドと検証：
+
+```powershell
+npm run validate:vsd-craft
+```
+
+導入：
+
+```powershell
+.\scripts\Install-VSDCraft-CodexDeck.ps1 `
+  -VSDCraftInstallerPath 'C:\path\to\VSD-Craft-Installer_Windows.exe' `
+  -Launch
+```
+
+詳細は[ニーズ](docs/vsd-craft/ニーズ.md)、[修正方針](docs/vsd-craft/修正方針.md)、[実行方針](docs/vsd-craft/実行方針.md)を参照してください。
+
+## 旧方式：M18直接接続
+
+以下はロールバック用のmirajazz直接接続方式です。VSD Craft運用時には起動しません。
 
 ## Codex Deckとは
 
