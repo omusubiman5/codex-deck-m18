@@ -49,7 +49,8 @@ Codex Deckの機能はコードから削除していません。ただしM18の1
 
 ## M18版の特徴
 
-- M18の15個のLCDキーと下段3ボタンからCodex Microの全操作を実行
+- 15個のLCDキーをCodex Micro面とCodex Deck追加機能面で切替
+- 下段3ボタンを環境1（Codex Micro）／環境2（Codex Deck）／環境3（VSD Craft）の専用切替として使用
 - 6つのCodexタスク状態をLCDへ同期表示
 - Codex Micro固有のFast、Approve、Reject、Fork、Dictation、Sendをそのまま送信
 - Plan、Back、Forward、SidebarとReasoning変更に対応
@@ -71,7 +72,11 @@ Codex Deckの機能はコードから削除していません。ただしM18の1
 | LCDキー | 15 |
 | 下段ボタン | 3 |
 
-## キー割当
+## 環境切替とキー割当
+
+下段左・中央・右は、それぞれ環境1・2・3を直接選びます。下段3ボタンにはCodex操作を割り当てません。
+
+### 環境1：Codex Micro
 
 | M18入力 | Codex Micro機能 |
 |---|---|
@@ -85,12 +90,14 @@ Codex Deckの機能はコードから削除していません。ただしM18の1
 | LCD 13 | Plan（Joystick Up） |
 | LCD 14 | Back（Joystick Left） |
 | LCD 15 | Forward（Joystick Right） |
-| 下段左 | Sidebar（Joystick Down） |
-| 下段中央・短押し | Reasoningを1段下げる |
-| 下段中央・500ms以上長押し | Encoder press。解放時にEncoder release |
-| 下段右 | Reasoningを1段上げる |
 
-Codex Microには、エンコーダ押下を別に数えると19種類の論理ジェスチャがあります。M18は18ボタンなので、下段中央だけ短押しと長押しを使い分けます。
+### 環境2：Codex Deck追加機能
+
+Sidebar、Encoder、Reasoning、New Task、Usage、Reset Credit、ホスト切替、Codex、Terminal、Diff、Browser、SettingsをLCD 1～15へ配置します。いずれも上流Codex Deckに既にある処理を呼び出します。
+
+### 環境3：M18標準
+
+Codex DeckがM18をshutdownして解放し、Windows上のVSD Craftへ制御を渡します。VSD CraftはM18本体へインストールするものではありません。
 
 LCD 7～12は名称をハードコードしたマクロではなく、Codex Microのアクションスロットです。Codex側で割当を変更すると、Codex Deckが取得する表示と実行内容も追従します。表中の名称はCodex Microの既定構成を示します。
 

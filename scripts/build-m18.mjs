@@ -18,4 +18,5 @@ const executable = process.platform === "win32" ? "codex-deck-m18-adapter.exe" :
 await copyFile(resolve("m18-adapter/target/release", executable), resolve(output, executable));
 await copyFile(resolve("scripts/Start-CodexDeck-M18.ps1"), resolve(output, "Start-CodexDeck-M18.ps1"));
 await copyFile(resolve("scripts/Watch-CodexDeck-M18.ps1"), resolve(output, "Watch-CodexDeck-M18.ps1"));
+await copyFile(resolve("scripts/Set-CodexDeck-M18-Environment.ps1"), resolve(output, "Set-CodexDeck-M18-Environment.ps1"));
 await cp(resolve("release/codex-deck-launcher"), resolve(output, "launcher"), { recursive: true });
