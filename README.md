@@ -7,6 +7,13 @@ VSD Inside M18を、Windows版またはmacOS版Codex Desktopの**Codex Micro操�
 > [!IMPORTANT]
 > OpenAI、Codex Deck、M18メーカーによる公式製品ではありません。Codex Desktopの非公開内部インターフェースを利用するため、Codexの更新後に追従修正が必要になる可能性があります。
 
+## 対応デバイスの購入情報
+
+- [VSDINSIDE M18（Amazon.co.jp）](https://www.amazon.co.jp/dp/B0GT8Q8KGQ)
+- 2026年8月16日時点：`￥8,999`、さらに`￥2,001 OFF`クーポン表示あり
+
+価格、クーポン、在庫、適用条件は変更される場合があります。購入画面で最新情報を確認してください。このリンクはAmazonアソシエイトリンクではありません。
+
 ## 推奨構成：VSD Craft転用
 
 ```text
