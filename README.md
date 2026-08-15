@@ -1,6 +1,6 @@
 # Codex Deck M18
 
-VSD Inside M18を、Windows版Codex Desktopの**Codex Micro操作デバイス**として使うためのOSSプロジェクトです。現在の推奨構成はメーカー標準アプリのVSD Craftです。
+VSD Inside M18を、Windows版またはmacOS版Codex Desktopの**Codex Micro操作デバイス**として使うためのOSSプロジェクトです。現在の推奨構成はメーカー標準アプリのVSD Craftです。Linuxは対象外です。
 
 上流の[Codex Deck](https://github.com/dazer1234/codex-stream-deck)が持つCodex Micro接続・状態取得・描画・イベント送信機能を維持し、M18のUSB通信、LCD転送、シーン管理はVSD Craftへ任せます。旧mirajazz直接接続方式もロールバック用としてソースに残していますが、VSD Craftと同時には起動しません。
 
@@ -33,13 +33,22 @@ VSD Craftの標準UIでキーをドラッグ配置します。実機には次の
 npm run validate:vsd-craft
 ```
 
-導入：
+Windowsへの導入：
 
 ```powershell
 .\scripts\Install-VSDCraft-CodexDeck.ps1 `
   -VSDCraftInstallerPath 'C:\path\to\VSD-Craft-Installer_Windows.exe' `
   -Launch
 ```
+
+macOSへの導入（VSD Craft公式macOS版とNode.js 20以上を先に導入）：
+
+```zsh
+chmod +x scripts/install-vsd-craft-codex-deck-macos.sh
+./scripts/install-vsd-craft-codex-deck-macos.sh
+```
+
+macOS版はVSD Craftの標準保存先`~/Library/Application Support/HotSpot/StreamDock/plugins`へプラグインを配置し、既存版を`~/Library/Application Support/CodexDeck/backups`へ退避します。Codex接続には既存のmacOS LaunchAgentをそのまま使用します。詳細は[macOS導入手順](docs/vsd-craft/MACOS.md)を参照してください。
 
 詳細は[ニーズ](docs/vsd-craft/ニーズ.md)、[修正方針](docs/vsd-craft/修正方針.md)、[実行方針](docs/vsd-craft/実行方針.md)を参照してください。
 

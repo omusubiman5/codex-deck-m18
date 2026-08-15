@@ -8,9 +8,11 @@ const failures = [];
 if (manifest.SDKVersion !== 1) failures.push("SDKVersion must be 1.");
 if (manifest.Software?.MinimumVersion !== "3.10.188.226") failures.push("Unexpected VSD Craft minimum version.");
 if (manifest.CodePathWin !== "bin/plugin.mjs") failures.push("CodePathWin must target bin/plugin.mjs.");
+if (manifest.CodePathMac !== "bin/plugin.mjs") failures.push("CodePathMac must target bin/plugin.mjs.");
 if (manifest.Nodejs?.Version !== "20") failures.push("VSD Craft Node.js version must be 20.");
 if (!Array.isArray(manifest.Actions) || manifest.Actions.length !== 53) failures.push("Expected all 53 Codex Deck actions.");
 await access(resolve(root, manifest.CodePathWin));
+await access(resolve(root, manifest.CodePathMac));
 const actionImages = new Set();
 for (const action of manifest.Actions ?? []) {
   for (const image of [action.Icon, action.States?.[0]?.Image]) {

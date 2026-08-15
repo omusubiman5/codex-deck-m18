@@ -12,11 +12,12 @@ const manifestPath = resolve(output, "manifest.json");
 const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
 manifest.SDKVersion = 1;
 manifest.CodePathWin = manifest.CodePath;
+manifest.CodePathMac = manifest.CodePath;
 manifest.Software = { MinimumVersion: "3.10.188.226" };
 manifest.Nodejs = { Version: "20" };
 await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
 
 if (manifest.CodePathWin !== "bin/plugin.mjs") throw new Error("Unexpected VSD Craft CodePathWin.");
+if (manifest.CodePathMac !== "bin/plugin.mjs") throw new Error("Unexpected VSD Craft CodePathMac.");
 if (!Array.isArray(manifest.Actions) || manifest.Actions.length === 0) throw new Error("VSD Craft package has no actions.");
 console.log(`VSD Craft package created with ${manifest.Actions.length} actions: ${output}`);
-

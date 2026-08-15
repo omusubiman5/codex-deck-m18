@@ -26,6 +26,7 @@
     "test": "tsx --test test/*.test.ts",
     "validate": "npm run build && streamdeck validate dist/com.simeo.codex-deck.sdPlugin",
     "validate:vsd-craft": "npm run build:vsd-craft && node scripts/validate-vsd-craft.mjs",
+    "install:vsd-craft:macos": "zsh scripts/install-vsd-craft-codex-deck-macos.sh",
     "pack": "npm run build && streamdeck pack dist/com.simeo.codex-deck.sdPlugin --force",
     "release:prepare": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/prepare-release.ps1"
   },
