@@ -1,4 +1,3 @@
-import streamDeck, { type KeyAction } from "@elgato/streamdeck";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { codexDeckStateRoot } from "./codex-deck-paths.js";
@@ -23,15 +22,16 @@ import type {
   RoutedAgentSlot, UsageLimitMode, UsageWindowKind
 } from "./types.js";
 import { selectAccountUsageSource, selectUsageWindow, type AccountUsageSource } from "./usage.js";
+import type { DeckRuntime, DeckSurfaceAction } from "./deck-runtime.js";
 
 export type FixedIconSource =
   | { kind: "local"; keycapId: string }
   | { kind: "builtin"; name: BuiltinIconName };
 
-type FixedIconRegistration = { action: KeyAction; source: FixedIconSource };
-type AgentRegistration = { action: KeyAction; slot: number };
-type MicroActionRegistration = { action: KeyAction; slot: MicroActionSlot };
-type UsageLimitRegistration = { action: KeyAction; mode: UsageLimitMode };
+type FixedIconRegistration = { action: DeckSurfaceAction; source: FixedIconSource };
+type AgentRegistration = { action: DeckSurfaceAction; slot: number };
+type MicroActionRegistration = { action: DeckSurfaceAction; slot: MicroActionSlot };
+type UsageLimitRegistration = { action: DeckSurfaceAction; mode: UsageLimitMode };
 type ActionIdentity = { id: string };
 type ContextRingSettings = { showContextRings?: boolean };
 
@@ -40,16 +40,16 @@ const LOCAL_MOBILE_CONFIG = "mobile-local-relay-server.json";
 const RESET_HOLD_MS = 1_200;
 
 export class DeckController {
-  private readonly microBridge = new CodexMicroRendererBridge((message) => streamDeck.logger.info(message));
+  private readonly microBridge: CodexMicroRendererBridge;
   private readonly agents = new Map<string, AgentRegistration>();
   private readonly microActions = new Map<string, MicroActionRegistration>();
   private readonly fixedActions = new Map<string, FixedIconRegistration>();
   private readonly keycapImages = new Map<string, Promise<string | null>>();
   private readonly lastImages = new Map<string, string>();
-  private readonly hostToggleActions = new Map<string, KeyAction>();
+  private readonly hostToggleActions = new Map<string, DeckSurfaceAction>();
   private readonly usageLimitActions = new Map<string, UsageLimitRegistration>();
-  private readonly usageOverviewActions = new Map<string, KeyAction>();
-  private readonly rateLimitResetActions = new Map<string, KeyAction>();
+  private readonly usageOverviewActions = new Map<string, DeckSurfaceAction>();
+  private readonly rateLimitResetActions = new Map<string, DeckSurfaceAction>();
   private readonly resetHolds = new Map<string, number>();
   private readonly activityIndex = new HostActivityIndex();
   private readonly pressedAgents = new Map<number, RoutedAgentSlot>();
@@ -76,13 +76,17 @@ export class DeckController {
   private lastHostHealthSignature = "";
   private showContextRings = true;
 
+  constructor(private readonly runtime: DeckRuntime) {
+    this.microBridge = new CodexMicroRendererBridge((message) => this.runtime.logger.info(message));
+  }
+
   async start(): Promise<void> {
     this.stopped = false;
     try {
-      const settings = await streamDeck.settings.getGlobalSettings<ContextRingSettings>();
+      const settings = await this.runtime.getGlobalSettings<ContextRingSettings>();
       this.showContextRings = settings.showContextRings !== false;
     } catch (error) {
-      streamDeck.logger.warn(`Context-ring settings were unavailable; using enabled by default: ${String(error)}`);
+      this.runtime.logger.warn(`Context-ring settings were unavailable; using enabled by default: ${String(error)}`);
     }
     this.localHost = await getOrCreateHostIdentity();
     const persistedTarget = await readControlTarget(undefined, this.localHost.platform);
@@ -95,7 +99,7 @@ export class DeckController {
       this.relayClient = new CodexRelayClient(
         relayConfig,
         () => { void this.refreshDisplay(); },
-        (message) => streamDeck.logger.info(message)
+        (message) => this.runtime.logger.info(message)
       );
       this.relayClient.start();
     }
@@ -142,14 +146,14 @@ export class DeckController {
         if (mobileRelayConfig) {
           this.mobileRelayServer = new CodexRelayServer(
             mobileRelayConfig, this.localHost, mobileControl,
-            (message) => streamDeck.logger.info(`Mobile relay: ${message}`)
+            (message) => this.runtime.logger.info(`Mobile relay: ${message}`)
           );
           await this.mobileRelayServer.start();
         }
         if (localMobileRelayConfig) {
           this.localMobileRelayServer = new CodexRelayServer(
             localMobileRelayConfig, this.localHost, mobileControl,
-            (message) => streamDeck.logger.info(`Nearby mobile relay: ${message}`)
+            (message) => this.runtime.logger.info(`Nearby mobile relay: ${message}`)
           );
           await this.localMobileRelayServer.start();
         }
@@ -157,7 +161,7 @@ export class DeckController {
     } catch (error) {
       this.mobileRelayServer = undefined;
       this.localMobileRelayServer = undefined;
-      streamDeck.logger.error(`Optional mobile relay was not started: ${String(error)}`);
+      this.runtime.logger.error(`Optional mobile relay was not started: ${String(error)}`);
     }
     await this.refresh();
     this.scheduleRefresh();
@@ -174,7 +178,7 @@ export class DeckController {
     this.microBridge.close();
   }
 
-  registerAgent(slot: number, action: KeyAction): void {
+  registerAgent(slot: number, action: DeckSurfaceAction): void {
     this.agents.set(action.id, { action, slot });
     void this.renderAgent({ action, slot });
   }
@@ -189,7 +193,7 @@ export class DeckController {
     void Promise.all([...this.agents.values()].map((registration) => this.renderAgent(registration)));
   }
 
-  registerMicroAction(slot: MicroActionSlot, action: KeyAction): void {
+  registerMicroAction(slot: MicroActionSlot, action: DeckSurfaceAction): void {
     this.microActions.set(action.id, { action, slot });
     void this.renderMicroAction({ action, slot });
   }
@@ -198,7 +202,7 @@ export class DeckController {
     this.unregister(action, this.microActions);
   }
 
-  registerFixedAction(id: string, action: KeyAction, source: FixedIconSource): void {
+  registerFixedAction(id: string, action: DeckSurfaceAction, source: FixedIconSource): void {
     this.fixedActions.set(action.id, { action, source });
     void this.renderFixedAction({ action, source });
   }
@@ -207,7 +211,7 @@ export class DeckController {
     this.unregister(action, this.fixedActions);
   }
 
-  registerHostToggle(action: KeyAction): void {
+  registerHostToggle(action: DeckSurfaceAction): void {
     this.hostToggleActions.set(action.id, action);
     void this.renderHostToggle(action);
   }
@@ -217,13 +221,13 @@ export class DeckController {
     this.lastImages.delete(action.id);
   }
 
-  registerUsageLimit(action: KeyAction, mode: UsageLimitMode): void {
+  registerUsageLimit(action: DeckSurfaceAction, mode: UsageLimitMode): void {
     const registration = { action, mode };
     this.usageLimitActions.set(action.id, registration);
     this.renderUsageAction("Usage limit", action, () => this.renderUsageLimit(registration));
   }
 
-  updateUsageLimitMode(action: KeyAction, mode: UsageLimitMode): void {
+  updateUsageLimitMode(action: DeckSurfaceAction, mode: UsageLimitMode): void {
     const registration = { action, mode };
     this.usageLimitActions.set(action.id, registration);
     this.renderUsageAction("Usage limit", action, () => this.renderUsageLimit(registration));
@@ -233,7 +237,7 @@ export class DeckController {
     this.unregister(action, this.usageLimitActions);
   }
 
-  registerUsageOverview(action: KeyAction): void {
+  registerUsageOverview(action: DeckSurfaceAction): void {
     this.usageOverviewActions.set(action.id, action);
     this.renderUsageAction("Usage overview", action, () => this.renderUsageOverview(action));
   }
@@ -242,7 +246,7 @@ export class DeckController {
     this.unregister(action, this.usageOverviewActions);
   }
 
-  registerRateLimitReset(action: KeyAction): void {
+  registerRateLimitReset(action: DeckSurfaceAction): void {
     this.rateLimitResetActions.set(action.id, action);
     this.renderUsageAction("Rate-limit reset", action, () => this.renderRateLimitReset(action));
   }
@@ -350,7 +354,7 @@ export class DeckController {
       const message = String(error);
       if (message !== this.lastError) {
         this.lastError = message;
-        streamDeck.logger.warn(`Codex Micro bridge unavailable: ${message}`);
+        this.runtime.logger.warn(`Codex Micro bridge unavailable: ${message}`);
       }
     }
     await this.refreshDisplay();
@@ -369,14 +373,14 @@ export class DeckController {
     const healthSignature = `local=${this.localHealth.state}:${this.localHealth.reason ?? ""},remote=${remoteHealth.state}:${remoteHealth.reason ?? ""}`;
     if (healthSignature !== this.lastHostHealthSignature) {
       this.lastHostHealthSignature = healthSignature;
-      streamDeck.logger.info(`Codex host health: ${healthSignature}`);
+      this.runtime.logger.info(`Codex host health: ${healthSignature}`);
     }
     const agentSources = inputs.map((input) => `${input.host.platform}=${input.snapshot.agentSource}`);
     const agentSourceSignature = agentSources.join(",");
     if (agentSourceSignature !== this.lastAgentSourceSignature) {
       this.lastAgentSourceSignature = agentSourceSignature;
       if (new Set(inputs.map((input) => input.snapshot.agentSource)).size > 1) {
-        streamDeck.logger.warn(`Codex agent sources differ (${agentSources.join(" ")}). The Windows controller mode determines the combined list; Pinned and Individual assignments merge only hosts using that mode.`);
+        this.runtime.logger.warn(`Codex agent sources differ (${agentSources.join(" ")}). The Windows controller mode determines the combined list; Pinned and Individual assignments merge only hosts using that mode.`);
       }
     }
     this.routedSlots = this.activityIndex.merge(inputs, Date.now(), this.localHost?.hostId);
@@ -384,13 +388,13 @@ export class DeckController {
     const assignments = this.routedSlots.map((slot) => `${slot.id}=${slot.host.platform}:${slot.threadKey ?? "empty"}`).join(" ");
     if (assignments !== this.lastAssignmentSignature) {
       this.lastAssignmentSignature = assignments;
-      streamDeck.logger.info(`Codex multi-host slots: ${assignments || "empty"}`);
+      this.runtime.logger.info(`Codex multi-host slots: ${assignments || "empty"}`);
     }
 
     const statuses = this.routedSlots.map((slot) => `${slot.host.hostId}:${slot.threadKey}:${slot.status}:${slot.selected}`).join(",");
     if (statuses !== this.lastStatusSignature) {
       this.lastStatusSignature = statuses;
-      streamDeck.logger.info(`Codex multi-host states: ${this.routedSlots.map((slot) => `${slot.id + 1}=${slot.status}`).join(" ") || "empty"}`);
+      this.runtime.logger.info(`Codex multi-host states: ${this.routedSlots.map((slot) => `${slot.id + 1}=${slot.status}`).join(" ") || "empty"}`);
     }
 
     const target = this.targetSnapshot();
@@ -398,7 +402,7 @@ export class DeckController {
     if (layout !== this.lastLayoutSignature) {
       this.lastLayoutSignature = layout;
       this.keycapImages.clear();
-      if (target) streamDeck.logger.info(`Codex Micro layout synchronized (${target.agentSource}, ${target.theme} theme).`);
+      if (target) this.runtime.logger.info(`Codex Micro layout synchronized (${target.agentSource}, ${target.theme} theme).`);
     }
     await this.renderAll();
   }
@@ -438,7 +442,7 @@ export class DeckController {
       return status === "thinking" || status === "input";
     });
     await Promise.all(registrations.map((registration) => this.renderAgent(registration).catch((error) =>
-      streamDeck.logger.error(`Agent animation ${registration.slot + 1} failed: ${String(error)}`)
+      this.runtime.logger.error(`Agent animation ${registration.slot + 1} failed: ${String(error)}`)
     )));
   }
 
@@ -458,7 +462,7 @@ export class DeckController {
     if (image) await this.setImage(registration.action, image);
   }
 
-  private async renderHostToggle(action: KeyAction): Promise<void> {
+  private async renderHostToggle(action: DeckSurfaceAction): Promise<void> {
     const label = this.targetPlatform === "darwin" ? "MAC" : "WIN";
     const theme = this.targetSnapshot()?.theme ?? "dark";
     await this.setImage(action, renderHostTargetKey(label, this.targetHealth().state, theme));
@@ -472,12 +476,12 @@ export class DeckController {
     await this.setImage(action, renderUsageLimitKey(window, requestedKind, snapshot?.theme ?? "dark", source.health.state));
   }
 
-  private async renderUsageOverview(action: KeyAction): Promise<void> {
+  private async renderUsageOverview(action: DeckSurfaceAction): Promise<void> {
     const source = this.accountUsageSource();
     await this.setImage(action, renderUsageOverviewKey(source.snapshot?.usage?.windows ?? [], source.snapshot?.theme ?? "dark", source.health.state));
   }
 
-  private async renderRateLimitReset(action: KeyAction): Promise<void> {
+  private async renderRateLimitReset(action: DeckSurfaceAction): Promise<void> {
     const source = this.accountUsageSource();
     const snapshot = source.snapshot;
     const startedAt = this.resetHolds.get(action.id);
@@ -560,16 +564,16 @@ export class DeckController {
     return target;
   }
 
-  private async setImage(action: KeyAction, image: string): Promise<void> {
+  private async setImage(action: DeckSurfaceAction, image: string): Promise<void> {
     if (this.lastImages.get(action.id) === image) return;
     await Promise.all([action.setImage(image), action.setTitle("")]);
     this.lastImages.set(action.id, image);
   }
 
-  private renderUsageAction(label: string, action: KeyAction, render: () => Promise<void>): void {
+  private renderUsageAction(label: string, action: DeckSurfaceAction, render: () => Promise<void>): void {
     void render()
-      .then(() => streamDeck.logger.info(`${label} action rendered (${action.id}).`))
-      .catch((error) => streamDeck.logger.error(`${label} action render failed (${action.id}): ${String(error)}`));
+      .then(() => this.runtime.logger.info(`${label} action rendered (${action.id}).`))
+      .catch((error) => this.runtime.logger.error(`${label} action render failed (${action.id}): ${String(error)}`));
   }
 
   private unregister<T>(action: ActionIdentity, registrations: Map<string, T>): void {

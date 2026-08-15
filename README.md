@@ -1,5 +1,7 @@
 # Codex Deck
 
+> This fork adds direct VSD Inside M18 support through `mirajazz`; OpenDeck and Elgato hardware are not required for that mode. See [M18 setup](docs/M18.md), [ニーズ](ニーズ.md), [修正方針](修正方針.md), and [実行方針](実行方針.md).
+
 Codex Deck brings the Codex Micro control model to an Elgato Stream Deck. It mirrors Codex's six native agent slots and sends Codex's own Micro events for actions, joystick directions, encoder clicks, reasoning effort, and official keycap commands. It does not type text or depend on global hotkeys.
 
 > [!IMPORTANT]

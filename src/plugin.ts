@@ -13,7 +13,10 @@ import {
   UsageLimit, UsageOverview
 } from "./actions.js";
 
-const controller = new DeckController();
+const controller = new DeckController({
+  logger: streamDeck.logger,
+  getGlobalSettings: async <T>() => await streamDeck.settings.getGlobalSettings() as T
+});
 
 streamDeck.settings.onDidReceiveGlobalSettings<{ showContextRings?: boolean }>((event) => {
   controller.setContextRingVisibility(event.settings.showContextRings !== false);
