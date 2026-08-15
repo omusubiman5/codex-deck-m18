@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import {
-  REASONING_ENCODER_KEYS, resolveAgentDispatch, retainEvaluationPromise, selectCodexMainTarget
+  REASONING_ENCODER_KEYS, environmentActionCommand, resolveAgentDispatch, retainEvaluationPromise, selectCodexMainTarget
 } from "../src/codex-micro-renderer-bridge.js";
 import { ADDITIONAL_KEYCAPS, OFFICIAL_KEYCAP_IDS } from "../src/keycaps.js";
 import { visualStatusFromMicro } from "../src/status.js";
@@ -117,6 +117,21 @@ test("reasoning controls use the official native encoder rotation events", async
   const source = await readFile(new URL("../src/codex-micro-renderer-bridge.ts", import.meta.url), "utf8");
   assert.match(source, /act: 2/);
   assert.match(source, /codex-micro-hid-event/);
+});
+
+test("environment buttons use Codex Micro's native environment action command slots", async () => {
+  assert.equal(environmentActionCommand(1), "environmentAction1");
+  assert.equal(environmentActionCommand(2), "environmentAction2");
+  assert.equal(environmentActionCommand(3), "environmentAction3");
+  const source = await readFile(new URL("../src/codex-micro-renderer-bridge.ts", import.meta.url), "utf8");
+  assert.match(source, /commandRunner\(\$\{JSON\.stringify\(command\)\}, 'codex_micro_hid'\)/);
+});
+
+test("M18 bottom buttons dispatch environment actions without replacing the LCD layout", async () => {
+  const source = await readFile(new URL("../src/m18.ts", import.meta.url), "utf8");
+  assert.match(source, /environmentAction\(1\), environmentAction\(2\), environmentAction\(3\)/);
+  assert.match(source, /agent\(0\), agent\(1\), agent\(2\), agent\(3\), agent\(4\), agent\(5\)/);
+  assert.doesNotMatch(source, /selectEnvironment|activeEnvironment|VSD Craft/);
 });
 
 test("manifest exposes both dedicated reasoning adjustment buttons", async () => {

@@ -35,8 +35,9 @@ Codex Deckの機能はコードから削除していません。ただしM18の1
 |---|---:|---:|
 | Agent 1–6とライブ状態 | 維持 | あり |
 | `ACT06`～`ACT12` | 維持 | あり |
-| Joystick上下左右 | 維持 | あり |
-| Encoder押下／Reasoning増減 | 維持 | あり |
+| Joystick上下左右 | 維持 | 上・左・右のみ |
+| Encoder押下／Reasoning増減 | 維持 | なし |
+| Codex環境アクション1～3 | 維持 | 下段3ボタン |
 | 公式Keycap単独コマンド | 維持 | なし |
 | Usage Limit／Usage Overview | 維持 | なし |
 | Rate Limit Reset | 維持 | なし |
@@ -49,11 +50,11 @@ Codex Deckの機能はコードから削除していません。ただしM18の1
 
 ## M18版の特徴
 
-- M18の15個のLCDキーと下段3ボタンからCodex Microの全操作を実行
+- M18の15個のLCDキーでCodex Microの主要操作を実行
+- 下段3ボタンはCodex Microと同じネイティブコマンド`environmentAction1`～`environmentAction3`を実行
 - 6つのCodexタスク状態をLCDへ同期表示
 - Codex Micro固有のFast、Approve、Reject、Fork、Dictation、Sendをそのまま送信
-- Plan、Back、Forward、SidebarとReasoning変更に対応
-- Codex Microのエンコーダ押下にも対応
+- Plan、Back、Forwardに対応
 - CodexまたはUSB切断後に再接続する常駐watcherを同梱
 - キー入力を診断ログへ記録
 - M18のファームウェア、Codex Desktop本体、USBドライバーを改変しない
@@ -85,12 +86,11 @@ Codex Deckの機能はコードから削除していません。ただしM18の1
 | LCD 13 | Plan（Joystick Up） |
 | LCD 14 | Back（Joystick Left） |
 | LCD 15 | Forward（Joystick Right） |
-| 下段左 | Sidebar（Joystick Down） |
-| 下段中央・短押し | Reasoningを1段下げる |
-| 下段中央・500ms以上長押し | Encoder press。解放時にEncoder release |
-| 下段右 | Reasoningを1段上げる |
+| 下段左 | Codex環境アクション1（`environmentAction1`） |
+| 下段中央 | Codex環境アクション2（`environmentAction2`） |
+| 下段右 | Codex環境アクション3（`environmentAction3`） |
 
-Codex Microには、エンコーダ押下を別に数えると19種類の論理ジェスチャがあります。M18は18ボタンなので、下段中央だけ短押しと長押しを使い分けます。
+下段3ボタンはM18内のページやプロファイルを切り替えません。Codex Desktopが登録している環境アクションのコマンドIDを、Codex Microと同じコマンドランナーへ渡します。各スロットが何をするかはCodex側の設定に従います。
 
 LCD 7～12は名称をハードコードしたマクロではなく、Codex Microのアクションスロットです。Codex側で割当を変更すると、Codex Deckが取得する表示と実行内容も追従します。表中の名称はCodex Microの既定構成を示します。
 

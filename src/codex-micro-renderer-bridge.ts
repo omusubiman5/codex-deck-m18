@@ -68,6 +68,13 @@ export const REASONING_ENCODER_KEYS: Record<ReasoningAdjustment, "ENC_CW" | "ENC
   increase: "ENC_CC"
 };
 
+export type EnvironmentActionSlot = 1 | 2 | 3;
+
+export function environmentActionCommand(slot: EnvironmentActionSlot): `environmentAction${EnvironmentActionSlot}` {
+  if (!Number.isInteger(slot) || slot < 1 || slot > 3) throw new Error(`Unknown Codex environment action slot: ${slot}`);
+  return `environmentAction${slot}`;
+}
+
 const SNAPSHOT_EXPRESSION = `(async () => {
   const urls = [...new Set([
     ...[...document.querySelectorAll('link[href], script[src]')].map((element) => element.href || element.src),
@@ -474,6 +481,54 @@ export class CodexMicroRendererBridge {
         return true;
       }
       throw new Error('This Codex Micro keycap action is not supported as a standalone key.');
+    })()`;
+    try {
+      await this.evaluate(expression);
+    } catch (error) {
+      this.disconnect();
+      throw error;
+    }
+  }
+
+  async runEnvironmentAction(slot: EnvironmentActionSlot): Promise<void> {
+    const command = environmentActionCommand(slot);
+    await this.ensureConnected();
+    const expression = `(async () => {
+      const urls = [...new Set([
+        ...[...document.querySelectorAll('link[href], script[src]')].map((element) => element.href || element.src),
+        ...performance.getEntriesByType('resource').map((entry) => entry.name)
+      ])];
+      const moduleUrl = (prefix) => urls.find((value) => value.includes('/assets/' + prefix));
+      const commandsUrl = moduleUrl('run-command-');
+      const bridgeUrl = moduleUrl('codex-micro-bridge-');
+      let commandRunner = null;
+      if (commandsUrl) {
+        const commands = await import(commandsUrl);
+        if (typeof commands.i === 'function') commandRunner = commands.i;
+      }
+      if (!commandRunner && bridgeUrl) {
+        const bridgeSource = await (await fetch(bridgeUrl)).text();
+        const runnerMatch = bridgeSource.match(/([A-Za-z_$][\\w$]*)\\(\\s*[A-Za-z_$][\\w$]*\\??\\.command\\s*,["'\\x60]codex_micro_hid["'\\x60]\\)/);
+        const runnerLocal = runnerMatch?.[1];
+        const importPattern = /import\\s*\\{([^}]*)\\}\\s*from\\s*["']([^"']+)["']/g;
+        let importMatch;
+        while (runnerLocal && (importMatch = importPattern.exec(bridgeSource))) {
+          for (const specifier of importMatch[1].split(',')) {
+            const parts = specifier.trim().split(/\\s+as\\s+/);
+            const exportName = parts[0];
+            const localName = parts[1] ?? parts[0];
+            if (localName !== runnerLocal) continue;
+            const namespace = await import(new URL(importMatch[2], bridgeUrl).href);
+            if (typeof namespace[exportName] === 'function') commandRunner = namespace[exportName];
+            break;
+          }
+          if (commandRunner) break;
+        }
+      }
+      if (typeof commandRunner !== 'function') throw new Error('Codex command runner is unavailable.');
+      const handled = commandRunner(${JSON.stringify(command)}, 'codex_micro_hid');
+      if (!handled) throw new Error('This Codex environment action is not active in the current view.');
+      return true;
     })()`;
     try {
       await this.evaluate(expression);

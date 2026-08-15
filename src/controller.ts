@@ -7,7 +7,7 @@ import {
 } from "./control-target.js";
 import { CodexRelayClient, readRelayClientConfig } from "./codex-relay-client.js";
 import { CodexRelayServer, readRelayServerConfig } from "./codex-relay-server.js";
-import { CodexMicroRendererBridge } from "./codex-micro-renderer-bridge.js";
+import { CodexMicroRendererBridge, type EnvironmentActionSlot } from "./codex-micro-renderer-bridge.js";
 import { getOrCreateHostIdentity } from "./host-identity.js";
 import type { OfficialKeycapId } from "./keycaps.js";
 import { HostActivityIndex, type HostSnapshot, type RelayCommand } from "./relay-protocol.js";
@@ -325,6 +325,10 @@ export class DeckController {
 
   async runKeycap(keycapId: OfficialKeycapId): Promise<void> {
     await this.sendToTarget({ kind: "keycap", keycapId }, () => this.microBridge.runKeycap(keycapId));
+  }
+
+  async runEnvironmentAction(slot: EnvironmentActionSlot): Promise<void> {
+    await this.microBridge.runEnvironmentAction(slot);
   }
 
   async createTask(): Promise<void> {
