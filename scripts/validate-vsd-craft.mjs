@@ -13,28 +13,20 @@ if (manifest.Nodejs?.Version !== "20") failures.push("VSD Craft Node.js version 
 if (!Array.isArray(manifest.Actions) || manifest.Actions.length !== 53) failures.push("Expected all 53 Codex Deck actions.");
 await access(resolve(root, manifest.CodePathWin));
 await access(resolve(root, manifest.CodePathMac));
-const actionImages = new Set();
+await access(resolve(root, "LICENSE"));
+await access(resolve(root, "THIRD_PARTY_NOTICES.md"));
+for (const filename of ["Start-CodexDeck.ps1", "Watch-CodexDeck.ps1", "runtime-override.mjs"]) {
+  await access(resolve(root, "launcher", filename));
+}
+await access(resolve(root, "launcher/node_modules/ws/package.json"));
 for (const action of manifest.Actions ?? []) {
-  for (const image of [action.Icon, action.States?.[0]?.Image]) {
-    if (typeof image === "string" && image.startsWith("static/imgs/actions/")) actionImages.add(image);
-  }
+  if (action.Icon !== "static/imgs/category-icon") failures.push(`Action ${action.UUID} has a fixed icon.`);
+  if (action.States?.[0]?.Image !== "static/imgs/key") failures.push(`Action ${action.UUID} has a fixed state image.`);
 }
-for (const image of actionImages) {
-  for (const suffix of [".png", "@2x.png"]) {
-    try { await access(resolve(root, `${image}${suffix}`)); }
-    catch { failures.push(`Missing packaged action image: ${image}${suffix}`); }
-  }
-}
-for (let agent = 1; agent <= 6; agent += 1) {
-  const stem = `static/imgs/actions/micro-${String(agent).padStart(2, "0")}-agent-${agent}`;
-  for (const status of ["empty", "idle", "thinking", "complete", "input", "error"]) {
-    for (const suffix of [".png", "@2x.png"]) {
-      const image = `${stem}-status-${status}${suffix}`;
-      try { await access(resolve(root, image)); }
-      catch { failures.push(`Missing packaged agent-status image: ${image}`); }
-    }
-  }
-}
+try {
+  await access(resolve(root, "static/imgs/actions"));
+  failures.push("Fixed artwork directory must not be packaged.");
+} catch {}
 
 if (failures.length > 0) throw new Error(failures.join("\n"));
-console.log(`VSD Craft manifest validation passed (${manifest.Actions.length} actions, ${actionImages.size} action images).`);
+console.log(`VSD Craft manifest validation passed (${manifest.Actions.length} live-rendered actions, no fixed artwork).`);

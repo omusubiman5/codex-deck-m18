@@ -36,6 +36,7 @@ test("renderer bridge uses native Micro events and discovers hashed modules at r
   assert.match(source, /performance\.getEntriesByType\('resource'\)/);
   assert.match(source, /createSubscriberAtom/);
   assert.match(source, /slots\.length === 6/);
+  assert.match(source, /canonicalThreadKey/);
   assert.match(source, /codex-micro-agent-source/);
   assert.match(source, /data-app-action-sidebar-thread-id/);
   assert.match(source, /activeThreadKey/);
@@ -160,9 +161,40 @@ test("standalone keycaps resolve Codex's live registry instead of hardcoding com
   assert.match(source, /keycapGetter/);
   assert.match(source, /codex-micro-bridge-/);
   assert.match(source, /runnerLocal/);
+  assert.match(source, /wrapperMatch/);
+  assert.match(source, /definitionStart/);
+  assert.match(source, /runnerArguments/);
   assert.match(source, /\\\\w/);
   assert.match(source, /import\\\\s/);
   assert.match(source, /codex_micro_hid/);
+});
+
+test("Codex key surfaces always use live Micro rendering instead of packaged artwork", async () => {
+  const controller = await readFile(new URL("../src/controller.ts", import.meta.url), "utf8");
+  const build = await readFile(new URL("../scripts/build.mjs", import.meta.url), "utf8");
+  assert.doesNotMatch(controller, /packagedImage|PACKAGED_ICON_ROOT|Monbra/);
+  assert.doesNotMatch(build, /static\/imgs\/actions/);
+  assert.match(build, /state\.Image = "static\/imgs\/key"/);
+});
+
+test("VSD Craft starts a packaged Windows bridge supervisor automatically", async () => {
+  const [plugin, supervisor, build, validation] = await Promise.all([
+    readFile(new URL("../src/plugin.ts", import.meta.url), "utf8"),
+    readFile(new URL("../src/windows-bridge-supervisor.ts", import.meta.url), "utf8"),
+    readFile(new URL("../scripts/build-vsd-craft.mjs", import.meta.url), "utf8"),
+    readFile(new URL("../scripts/validate-vsd-craft.mjs", import.meta.url), "utf8")
+  ]);
+  assert.match(plugin, /startWindowsBridgeSupervisor\(streamDeck\.logger\)/);
+  assert.match(supervisor, /RecoverExistingSession/);
+  assert.doesNotMatch(supervisor, /detached: true/);
+  assert.match(supervisor, /windowsHide: true/);
+  assert.match(supervisor, /supervisor exited unexpectedly/);
+  for (const filename of ["Start-CodexDeck.ps1", "Watch-CodexDeck.ps1", "runtime-override.mjs"]) {
+    assert.equal(build.includes(filename), true);
+    assert.equal(validation.includes(filename), true);
+  }
+  assert.match(build, /release\/codex-deck-launcher\/node_modules/);
+  assert.match(validation, /launcher\/node_modules\/ws\/package\.json/);
 });
 
 test("controller avoids overlapping polls and redundant image writes", async () => {

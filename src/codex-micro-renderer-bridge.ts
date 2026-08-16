@@ -361,6 +361,10 @@ export class CodexMicroRendererBridge {
   private async ensureThreadActivated(threadKey: string): Promise<void> {
     const result = await this.evaluate<"active" | "opened" | "missing" | "failed">(`(async () => {
       const threadKey = ${JSON.stringify(threadKey)};
+      const canonicalThreadKey = (value) => typeof value === 'string' && value.startsWith('local:')
+        ? value.slice('local:'.length)
+        : value;
+      const expectedThreadKey = canonicalThreadKey(threadKey);
       const activeThreadKey = () => document.querySelector('[data-above-composer-conversation-id]')
         ?.getAttribute('data-above-composer-conversation-id')
         ?? document.querySelector('[data-app-action-sidebar-thread-id][data-app-action-sidebar-thread-active="true"]')
@@ -371,14 +375,14 @@ export class CodexMicroRendererBridge {
       const waitForActive = async (duration) => {
         const deadline = Date.now() + duration;
         while (Date.now() < deadline) {
-          if (activeThreadKey() === threadKey) return true;
+          if (canonicalThreadKey(activeThreadKey()) === expectedThreadKey) return true;
           await new Promise((resolve) => setTimeout(resolve, 25));
         }
-        return activeThreadKey() === threadKey;
+        return canonicalThreadKey(activeThreadKey()) === expectedThreadKey;
       };
       if (await waitForActive(250)) return 'active';
       const item = [...document.querySelectorAll('[data-app-action-sidebar-thread-id]')]
-        .find((element) => element.getAttribute('data-app-action-sidebar-thread-id') === threadKey);
+        .find((element) => canonicalThreadKey(element.getAttribute('data-app-action-sidebar-thread-id')) === expectedThreadKey);
       if (!item) return 'missing';
       const selector = 'button, a, [role="button"], [role="link"]';
       const clickable = item.matches(selector) ? item : item.querySelector(selector) ?? item.closest(selector) ?? item;
@@ -446,7 +450,27 @@ export class CodexMicroRendererBridge {
         if (!commandRunner && bridgeUrl) {
           const bridgeSource = await (await fetch(bridgeUrl)).text();
           const runnerMatch = bridgeSource.match(/([A-Za-z_$][\\w$]*)\\(\\s*[A-Za-z_$][\\w$]*\\??\\.command\\s*,["'\\x60]codex_micro_hid["'\\x60]\\)/);
-          const runnerLocal = runnerMatch?.[1];
+          let runnerLocal = runnerMatch?.[1];
+          if (!runnerLocal) {
+            const wrapperMatch = bridgeSource.match(/!?([A-Za-z_$][\\w$]*)\\(\\s*[A-Za-z_$][\\w$]*\\s*,\\s*[A-Za-z_$][\\w$]*\\??\\.command\\s*,\\s*["'\\x60]codex_micro_hid["'\\x60]\\)/);
+            const wrapperName = wrapperMatch?.[1];
+            const definitionStart = wrapperName ? bridgeSource.indexOf('function ' + wrapperName + '(') : -1;
+            const parametersStart = definitionStart >= 0 ? bridgeSource.indexOf('(', definitionStart) : -1;
+            const parametersEnd = parametersStart >= 0 ? bridgeSource.indexOf(')', parametersStart) : -1;
+            const bodyStart = parametersEnd >= 0 ? bridgeSource.indexOf('{', parametersEnd) : -1;
+            const parameters = parametersStart >= 0 && parametersEnd > parametersStart
+              ? bridgeSource.slice(parametersStart + 1, parametersEnd).split(',').map((value) => value.trim())
+              : [];
+            const body = bodyStart >= 0 ? bridgeSource.slice(bodyStart + 1, bodyStart + 1601) : '';
+            if (parameters.length >= 3) {
+              const compactBody = body.replace(/\\s+/g, '');
+              const runnerArguments = '(' + parameters[1] + ',' + parameters[2] + ')';
+              const runnerCall = compactBody.indexOf(runnerArguments);
+              runnerLocal = runnerCall >= 0
+                ? compactBody.slice(0, runnerCall).match(/[A-Za-z_$][\\w$]*$/)?.[0]
+                : undefined;
+            }
+          }
           const importPattern = /import\\s*\\{([^}]*)\\}\\s*from\\s*["']([^"']+)["']/g;
           let importMatch;
           while (runnerLocal && (importMatch = importPattern.exec(bridgeSource))) {
@@ -509,7 +533,27 @@ export class CodexMicroRendererBridge {
       if (!commandRunner && bridgeUrl) {
         const bridgeSource = await (await fetch(bridgeUrl)).text();
         const runnerMatch = bridgeSource.match(/([A-Za-z_$][\\w$]*)\\(\\s*[A-Za-z_$][\\w$]*\\??\\.command\\s*,["'\\x60]codex_micro_hid["'\\x60]\\)/);
-        const runnerLocal = runnerMatch?.[1];
+        let runnerLocal = runnerMatch?.[1];
+        if (!runnerLocal) {
+          const wrapperMatch = bridgeSource.match(/!?([A-Za-z_$][\\w$]*)\\(\\s*[A-Za-z_$][\\w$]*\\s*,\\s*[A-Za-z_$][\\w$]*\\??\\.command\\s*,\\s*["'\\x60]codex_micro_hid["'\\x60]\\)/);
+          const wrapperName = wrapperMatch?.[1];
+          const definitionStart = wrapperName ? bridgeSource.indexOf('function ' + wrapperName + '(') : -1;
+          const parametersStart = definitionStart >= 0 ? bridgeSource.indexOf('(', definitionStart) : -1;
+          const parametersEnd = parametersStart >= 0 ? bridgeSource.indexOf(')', parametersStart) : -1;
+          const bodyStart = parametersEnd >= 0 ? bridgeSource.indexOf('{', parametersEnd) : -1;
+          const parameters = parametersStart >= 0 && parametersEnd > parametersStart
+            ? bridgeSource.slice(parametersStart + 1, parametersEnd).split(',').map((value) => value.trim())
+            : [];
+          const body = bodyStart >= 0 ? bridgeSource.slice(bodyStart + 1, bodyStart + 1601) : '';
+          if (parameters.length >= 3) {
+            const compactBody = body.replace(/\\s+/g, '');
+            const runnerArguments = '(' + parameters[1] + ',' + parameters[2] + ')';
+            const runnerCall = compactBody.indexOf(runnerArguments);
+            runnerLocal = runnerCall >= 0
+              ? compactBody.slice(0, runnerCall).match(/[A-Za-z_$][\\w$]*$/)?.[0]
+              : undefined;
+          }
+        }
         const importPattern = /import\\s*\\{([^}]*)\\}\\s*from\\s*["']([^"']+)["']/g;
         let importMatch;
         while (runnerLocal && (importMatch = importPattern.exec(bridgeSource))) {

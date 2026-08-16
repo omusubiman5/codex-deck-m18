@@ -38,7 +38,37 @@ async function walk(path) {
 }
 
 for (const root of roots) {
-  try { await walk(root); }
+  try {
+    const entries = new Set(await readdir(root));
+    const isM18Distribution = basename(root).toLowerCase() === "m18"
+      || entries.has("codex-deck-m18-adapter.exe")
+      || entries.has("codex-deck-m18-adapter");
+    if (!entries.has("LICENSE")) failures.push(`${root}: distribution LICENSE is missing`);
+    if (root.endsWith(".sdPlugin") && !entries.has("THIRD_PARTY_NOTICES.md")) {
+      failures.push(`${root}: bundled dependency notices are missing`);
+    }
+    if (isM18Distribution && !entries.has("THIRD_PARTY_NOTICES.md")) {
+      failures.push(`${root}: M18 distribution notices are missing`);
+    }
+    if (isM18Distribution && !entries.has("LICENSE.adapter-GPL-3.0")) {
+      failures.push(`${root}: M18 adapter GPL-3.0 license is missing`);
+    }
+    if (isM18Distribution && entries.has("THIRD_PARTY_NOTICES.md")) {
+      const notices = await readFile(resolve(root, "THIRD_PARTY_NOTICES.md"), "utf8");
+      if (!/codex-deck-m18-adapter/u.test(notices)
+        || !/GPL-3\.0-only/u.test(notices)
+        || !/LICENSE\.adapter-GPL-3\.0/u.test(notices)) {
+        failures.push(`${root}: M18 adapter notice does not identify the binary, license, and license file`);
+      }
+    }
+    if (isM18Distribution && entries.has("LICENSE.adapter-GPL-3.0")) {
+      const adapterLicense = await readFile(resolve(root, "LICENSE.adapter-GPL-3.0"), "utf8");
+      if (!/GNU GENERAL PUBLIC LICENSE[\s\S]*Version 3/u.test(adapterLicense)) {
+        failures.push(`${root}: M18 adapter license is not the GNU GPL version 3 text`);
+      }
+    }
+    await walk(root);
+  }
   catch (error) { failures.push(`${root}: cannot audit (${String(error)})`); }
 }
 

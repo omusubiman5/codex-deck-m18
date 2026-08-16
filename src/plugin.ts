@@ -1,5 +1,6 @@
 import streamDeck from "@elgato/streamdeck";
 import { DeckController } from "./controller.js";
+import { startWindowsBridgeSupervisor } from "./windows-bridge-supervisor.js";
 import {
   Agent1, Agent2, Agent3, Agent4, Agent5, Agent6,
   Approve, Back, Decline, Dictation, Fast, Fork, Forward, NewTask,
@@ -45,6 +46,7 @@ for (const pluginAction of [
 ]) streamDeck.actions.registerAction(pluginAction);
 
 streamDeck.connect();
+startWindowsBridgeSupervisor(streamDeck.logger);
 void controller.start().catch((error) => streamDeck.logger.error(`Codex-Verbindung fehlgeschlagen: ${String(error)}`));
 
 process.once("SIGTERM", () => controller.stop());
