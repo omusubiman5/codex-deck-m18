@@ -1,14 +1,14 @@
 {
-  "name": "codex-stream-deck",
+  "name": "codex-deck-m18",
   "version": "0.7.0-hotfix.2",
-  "private": false,
+  "private": true,
   "type": "module",
   "description": "Unofficial Codex Micro bridge for Stream Deck on Windows and macOS, with optional multi-host relay",
   "license": "MIT",
-  "author": "Dazer",
+  "author": "omusubiman5",
   "repository": {
     "type": "git",
-    "url": "https://github.com/dazer1234/codex-stream-deck.git"
+    "url": "https://github.com/omusubiman5/codex-deck-m18.git"
   },
   "engines": {
     "node": ">=20"

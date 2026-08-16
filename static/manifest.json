@@ -10,66 +10,833 @@
   "Icon": "static/imgs/plugin-icon",
   "CodePath": "bin/plugin.mjs",
   "SDKVersion": 2,
-  "Software": { "MinimumVersion": "6.6" },
+  "Software": {
+    "MinimumVersion": "6.6"
+  },
   "OS": [
-    { "Platform": "windows", "MinimumVersion": "10" },
-    { "Platform": "mac", "MinimumVersion": "13" }
+    {
+      "Platform": "windows",
+      "MinimumVersion": "10"
+    },
+    {
+      "Platform": "mac",
+      "MinimumVersion": "13"
+    }
   ],
-  "Nodejs": { "Version": "20", "Debug": "enabled" },
-  "ApplicationsToMonitor": { "windows": ["ChatGPT.exe"], "mac": ["com.openai.codex"] },
+  "Nodejs": {
+    "Version": "20",
+    "Debug": "enabled"
+  },
+  "ApplicationsToMonitor": {
+    "windows": [
+      "ChatGPT.exe"
+    ],
+    "mac": [
+      "com.openai.codex"
+    ]
+  },
   "Actions": [
-    { "UUID": "com.simeo.codex-deck.agent-1", "Name": "Agent 1", "Tooltip": "Open native Codex Micro agent slot 1.", "Icon": "static/imgs/actions/micro-01-agent-1", "PropertyInspectorPath": "static/property-inspector/agent.html", "Controllers": ["Keypad"], "States": [{ "Image": "static/imgs/actions/micro-01-agent-1", "Title": "" }] },
-    { "UUID": "com.simeo.codex-deck.agent-2", "Name": "Agent 2", "Tooltip": "Open native Codex Micro agent slot 2.", "Icon": "static/imgs/actions/micro-02-agent-2", "PropertyInspectorPath": "static/property-inspector/agent.html", "Controllers": ["Keypad"], "States": [{ "Image": "static/imgs/actions/micro-02-agent-2", "Title": "" }] },
-    { "UUID": "com.simeo.codex-deck.agent-3", "Name": "Agent 3", "Tooltip": "Open native Codex Micro agent slot 3.", "Icon": "static/imgs/actions/micro-03-agent-3", "PropertyInspectorPath": "static/property-inspector/agent.html", "Controllers": ["Keypad"], "States": [{ "Image": "static/imgs/actions/micro-03-agent-3", "Title": "" }] },
-    { "UUID": "com.simeo.codex-deck.agent-4", "Name": "Agent 4", "Tooltip": "Open native Codex Micro agent slot 4.", "Icon": "static/imgs/actions/micro-04-agent-4", "PropertyInspectorPath": "static/property-inspector/agent.html", "Controllers": ["Keypad"], "States": [{ "Image": "static/imgs/actions/micro-04-agent-4", "Title": "" }] },
-    { "UUID": "com.simeo.codex-deck.agent-5", "Name": "Agent 5", "Tooltip": "Open native Codex Micro agent slot 5.", "Icon": "static/imgs/actions/micro-05-agent-5", "PropertyInspectorPath": "static/property-inspector/agent.html", "Controllers": ["Keypad"], "States": [{ "Image": "static/imgs/actions/micro-05-agent-5", "Title": "" }] },
-    { "UUID": "com.simeo.codex-deck.agent-6", "Name": "Agent 6", "Tooltip": "Open native Codex Micro agent slot 6.", "Icon": "static/imgs/actions/micro-06-agent-6", "PropertyInspectorPath": "static/property-inspector/agent.html", "Controllers": ["Keypad"], "States": [{ "Image": "static/imgs/actions/micro-06-agent-6", "Title": "" }] },
-    { "UUID": "com.simeo.codex-deck.fast", "Name": "Action 1 / Fast", "Tooltip": "Send the current ACT06 Codex Micro action.", "Icon": "static/imgs/actions/micro-07-fast", "Controllers": ["Keypad"], "States": [{ "Image": "static/imgs/actions/micro-07-fast", "Title": "" }] },
-    { "UUID": "com.simeo.codex-deck.approve", "Name": "Action 2 / Approve", "Tooltip": "Send the current ACT07 Codex Micro action.", "Icon": "static/imgs/actions/micro-08-approve", "Controllers": ["Keypad"], "States": [{ "Image": "static/imgs/actions/micro-08-approve", "Title": "" }] },
-    { "UUID": "com.simeo.codex-deck.decline", "Name": "Action 3 / Reject", "Tooltip": "Send the current ACT08 Codex Micro action.", "Icon": "static/imgs/actions/micro-09-reject", "Controllers": ["Keypad"], "States": [{ "Image": "static/imgs/actions/micro-09-reject", "Title": "" }] },
-    { "UUID": "com.simeo.codex-deck.fork", "Name": "Action 4 / Fork", "Tooltip": "Send the current ACT09 Codex Micro action.", "Icon": "static/imgs/actions/micro-10-split", "Controllers": ["Keypad"], "States": [{ "Image": "static/imgs/actions/micro-10-split", "Title": "" }] },
-    { "UUID": "com.simeo.codex-deck.dictation", "Name": "Action 5 / Push-to-talk", "Tooltip": "Send the current ACT10/ACT11 Codex Micro action.", "Icon": "static/imgs/actions/micro-11-microphone", "Controllers": ["Keypad"], "States": [{ "Image": "static/imgs/actions/micro-11-microphone", "Title": "" }] },
-    { "UUID": "com.simeo.codex-deck.send", "Name": "Action 6 / Send", "Tooltip": "Send the current ACT12 Codex Micro action.", "Icon": "static/imgs/actions/micro-12-codex", "Controllers": ["Keypad"], "States": [{ "Image": "static/imgs/actions/micro-12-codex", "Title": "" }] },
-    { "UUID": "com.simeo.codex-deck.plan", "Name": "Joystick Up", "Tooltip": "Send the native Codex Micro joystick-up action.", "Icon": "static/imgs/actions/micro-13-joystick-up", "Controllers": ["Keypad"], "States": [{ "Image": "static/imgs/actions/micro-13-joystick-up", "Title": "" }] },
-    { "UUID": "com.simeo.codex-deck.back", "Name": "Joystick Left", "Tooltip": "Send the native Codex Micro joystick-left action.", "Icon": "static/imgs/actions/micro-14-joystick-left", "Controllers": ["Keypad"], "States": [{ "Image": "static/imgs/actions/micro-14-joystick-left", "Title": "" }] },
-    { "UUID": "com.simeo.codex-deck.forward", "Name": "Joystick Right", "Tooltip": "Send the native Codex Micro joystick-right action.", "Icon": "static/imgs/actions/micro-15-joystick-right", "Controllers": ["Keypad"], "States": [{ "Image": "static/imgs/actions/micro-15-joystick-right", "Title": "" }] },
-    { "UUID": "com.simeo.codex-deck.sidebar", "Name": "Joystick Down", "Tooltip": "Send the native Codex Micro joystick-down action.", "Icon": "static/imgs/actions/tools-01-sidebar-down", "Controllers": ["Keypad"], "States": [{ "Image": "static/imgs/actions/tools-01-sidebar-down", "Title": "" }] },
-    { "UUID": "com.simeo.codex-deck.reasoning", "Name": "Reasoning Encoder Click", "Tooltip": "Send the native Codex Micro encoder-click action.", "Icon": "static/imgs/actions/tools-02-reasoning-click", "Controllers": ["Keypad"], "States": [{ "Image": "static/imgs/actions/tools-02-reasoning-click", "Title": "" }] },
-    { "UUID": "com.simeo.codex-deck.reasoning-down", "Name": "Reasoning Effort Down", "Tooltip": "Decrease composer reasoning effort through Codex's internal command path.", "Icon": "static/imgs/actions/tools-03-reasoning-down", "Controllers": ["Keypad"], "States": [{ "Image": "static/imgs/actions/tools-03-reasoning-down", "Title": "" }] },
-    { "UUID": "com.simeo.codex-deck.reasoning-up", "Name": "Reasoning Effort Up", "Tooltip": "Increase composer reasoning effort through Codex's internal command path.", "Icon": "static/imgs/actions/tools-04-reasoning-up", "Controllers": ["Keypad"], "States": [{ "Image": "static/imgs/actions/tools-04-reasoning-up", "Title": "" }] },
-    { "UUID": "com.simeo.codex-deck.new-task", "Name": "New Task", "Tooltip": "Open a new Codex task.", "Icon": "static/imgs/actions/tools-05-new-task", "Controllers": ["Keypad"], "States": [{ "Image": "static/imgs/actions/tools-05-new-task", "Title": "" }] },
-    { "UUID": "com.simeo.codex-deck.host-toggle", "Name": "Windows / Mac Target + Health", "Tooltip": "Shows READY, DEGRADED, CONNECT, or OFFLINE for the selected Codex host and switches function, joystick, and reasoning keys between Windows and Mac. Agent keys always route to their originating host.", "Icon": "static/imgs/actions/tools-06-target-health", "Controllers": ["Keypad"], "States": [{ "Image": "static/imgs/actions/tools-06-target-health", "Title": "" }] },
-    { "UUID": "com.simeo.codex-deck.usage-limit", "Name": "Usage Limit", "Tooltip": "Shows remaining Codex usage for Auto, 5-hour, or Weekly mode.", "Icon": "static/imgs/actions/tools-07-usage-limit", "PropertyInspectorPath": "static/property-inspector/usage-limit.html", "Controllers": ["Keypad"], "States": [{ "Image": "static/imgs/actions/tools-07-usage-limit", "Title": "" }] },
-    { "UUID": "com.simeo.codex-deck.usage-overview", "Name": "Usage Overview", "Tooltip": "Shows the 5-hour and weekly Codex usage windows together.", "Icon": "static/imgs/actions/tools-08-usage-overview", "Controllers": ["Keypad"], "States": [{ "Image": "static/imgs/actions/tools-08-usage-overview", "Title": "" }] },
-    { "UUID": "com.simeo.codex-deck.rate-limit-reset", "Name": "Rate Limit Reset", "Tooltip": "Shows available reset credits. Hold for 1.2 seconds to consume one when applicable.", "Icon": "static/imgs/actions/tools-09-rate-limit-reset", "Controllers": ["Keypad"], "States": [{ "Image": "static/imgs/actions/tools-09-rate-limit-reset", "Title": "" }] },
-    { "UUID": "com.simeo.codex-deck.keycap-fast", "Name": "Keycap · Fast Mode", "Tooltip": "Toggle Fast mode through the native Codex Micro command.", "Icon": "static/imgs/category-icon", "Controllers": ["Keypad"], "States": [{ "Image": "static/imgs/key", "Title": "" }] },
-    { "UUID": "com.simeo.codex-deck.keycap-approve", "Name": "Keycap · Approve", "Tooltip": "Approve the current Codex request.", "Icon": "static/imgs/category-icon", "Controllers": ["Keypad"], "States": [{ "Image": "static/imgs/key", "Title": "" }] },
-    { "UUID": "com.simeo.codex-deck.keycap-reject", "Name": "Keycap · Reject", "Tooltip": "Reject the current Codex request.", "Icon": "static/imgs/category-icon", "Controllers": ["Keypad"], "States": [{ "Image": "static/imgs/key", "Title": "" }] },
-    { "UUID": "com.simeo.codex-deck.keycap-split", "Name": "Keycap · Fork Chat", "Tooltip": "Fork the current Codex chat.", "Icon": "static/imgs/category-icon", "Controllers": ["Keypad"], "States": [{ "Image": "static/imgs/key", "Title": "" }] },
-    { "UUID": "com.simeo.codex-deck.keycap-new-task", "Name": "Keycap · New Task", "Tooltip": "Create a new Codex task through the native command.", "Icon": "static/imgs/category-icon", "Controllers": ["Keypad"], "States": [{ "Image": "static/imgs/key", "Title": "" }] },
-    { "UUID": "com.simeo.codex-deck.keycap-reasoning-up", "Name": "Keycap · Reasoning Up", "Tooltip": "Increase the current composer reasoning effort.", "Icon": "static/imgs/category-icon", "Controllers": ["Keypad"], "States": [{ "Image": "static/imgs/key", "Title": "" }] },
-    { "UUID": "com.simeo.codex-deck.keycap-reasoning-down", "Name": "Keycap · Reasoning Down", "Tooltip": "Decrease the current composer reasoning effort.", "Icon": "static/imgs/category-icon", "Controllers": ["Keypad"], "States": [{ "Image": "static/imgs/key", "Title": "" }] },
-    { "UUID": "com.simeo.codex-deck.keycap-codex", "Name": "Keycap · Codex / Submit", "Tooltip": "Submit the current composer through the native Codex Micro command.", "Icon": "static/imgs/category-icon", "Controllers": ["Keypad"], "States": [{ "Image": "static/imgs/key", "Title": "" }] },
-    { "UUID": "com.simeo.codex-deck.keycap-bug", "Name": "Keycap · Bug / Feedback", "Tooltip": "Open Codex feedback through the native Codex Micro command.", "Icon": "static/imgs/category-icon", "Controllers": ["Keypad"], "States": [{ "Image": "static/imgs/key", "Title": "" }] },
-    { "UUID": "com.simeo.codex-deck.keycap-openai-docs", "Name": "Keycap · OpenAI Docs", "Tooltip": "Open the official OpenAI developer documentation.", "Icon": "static/imgs/category-icon", "Controllers": ["Keypad"], "States": [{ "Image": "static/imgs/key", "Title": "" }] },
-    { "UUID": "com.simeo.codex-deck.keycap-terminal", "Name": "Keycap · Terminal", "Tooltip": "Toggle the Codex terminal.", "Icon": "static/imgs/actions/tools-10-terminal", "Controllers": ["Keypad"], "States": [{ "Image": "static/imgs/actions/tools-10-terminal", "Title": "" }] },
-    { "UUID": "com.simeo.codex-deck.keycap-download", "Name": "Keycap · Copy Chat Markdown", "Tooltip": "Copy the current conversation as Markdown.", "Icon": "static/imgs/actions/tools-11-copy-chat-markdown", "Controllers": ["Keypad"], "States": [{ "Image": "static/imgs/actions/tools-11-copy-chat-markdown", "Title": "" }] },
-    { "UUID": "com.simeo.codex-deck.keycap-archive", "Name": "Keycap · Archive Chat", "Tooltip": "Archive the current Codex chat.", "Icon": "static/imgs/actions/tools-12-archive-chat", "Controllers": ["Keypad"], "States": [{ "Image": "static/imgs/actions/tools-12-archive-chat", "Title": "" }] },
-    { "UUID": "com.simeo.codex-deck.keycap-browser", "Name": "Keycap · Browser", "Tooltip": "Open a Codex browser tab.", "Icon": "static/imgs/actions/tools-14-browser", "Controllers": ["Keypad"], "States": [{ "Image": "static/imgs/actions/tools-14-browser", "Title": "" }] },
-    { "UUID": "com.simeo.codex-deck.keycap-pin", "Name": "Keycap · Pin / Unpin Chat", "Tooltip": "Toggle the pinned state of the current chat.", "Icon": "static/imgs/category-icon", "Controllers": ["Keypad"], "States": [{ "Image": "static/imgs/key", "Title": "" }] },
-    { "UUID": "com.simeo.codex-deck.keycap-diff", "Name": "Keycap · Review", "Tooltip": "Toggle the Codex review view.", "Icon": "static/imgs/actions/tools-13-diff-review", "Controllers": ["Keypad"], "States": [{ "Image": "static/imgs/actions/tools-13-diff-review", "Title": "" }] },
-    { "UUID": "com.simeo.codex-deck.keycap-play", "Name": "Keycap · Run Environment Action", "Tooltip": "Run the first configured environment action.", "Icon": "static/imgs/category-icon", "Controllers": ["Keypad"], "States": [{ "Image": "static/imgs/key", "Title": "" }] },
-    { "UUID": "com.simeo.codex-deck.keycap-git-commit", "Name": "Keycap · Git Commit", "Tooltip": "Open the native Codex Git commit flow.", "Icon": "static/imgs/category-icon", "Controllers": ["Keypad"], "States": [{ "Image": "static/imgs/key", "Title": "" }] },
-    { "UUID": "com.simeo.codex-deck.keycap-branch", "Name": "Keycap · Branch Review", "Tooltip": "Open the Codex review view with the branch keycap.", "Icon": "static/imgs/category-icon", "Controllers": ["Keypad"], "States": [{ "Image": "static/imgs/key", "Title": "" }] },
-    { "UUID": "com.simeo.codex-deck.keycap-merge", "Name": "Keycap · Merge Review", "Tooltip": "Open the Codex review view with the merge keycap.", "Icon": "static/imgs/category-icon", "Controllers": ["Keypad"], "States": [{ "Image": "static/imgs/key", "Title": "" }] },
-    { "UUID": "com.simeo.codex-deck.keycap-pull-request", "Name": "Keycap · Create Pull Request", "Tooltip": "Open the native Codex pull-request flow.", "Icon": "static/imgs/category-icon", "Controllers": ["Keypad"], "States": [{ "Image": "static/imgs/key", "Title": "" }] },
-    { "UUID": "com.simeo.codex-deck.keycap-add-photos", "Name": "Keycap · Add Photos", "Tooltip": "Add photos to the current composer.", "Icon": "static/imgs/category-icon", "Controllers": ["Keypad"], "States": [{ "Image": "static/imgs/key", "Title": "" }] },
-    { "UUID": "com.simeo.codex-deck.keycap-lab", "Name": "Keycap · Lab / Settings", "Tooltip": "Open Codex settings with the lab keycap.", "Icon": "static/imgs/category-icon", "Controllers": ["Keypad"], "States": [{ "Image": "static/imgs/key", "Title": "" }] },
-    { "UUID": "com.simeo.codex-deck.keycap-side-chat", "Name": "Keycap · Side Chat", "Tooltip": "Open a Codex side chat.", "Icon": "static/imgs/category-icon", "Controllers": ["Keypad"], "States": [{ "Image": "static/imgs/key", "Title": "" }] },
-    { "UUID": "com.simeo.codex-deck.keycap-tasks", "Name": "Keycap · Manage Tasks", "Tooltip": "Open Codex task management.", "Icon": "static/imgs/category-icon", "Controllers": ["Keypad"], "States": [{ "Image": "static/imgs/key", "Title": "" }] },
-    { "UUID": "com.simeo.codex-deck.keycap-settings", "Name": "Keycap · Settings", "Tooltip": "Open Codex settings.", "Icon": "static/imgs/actions/tools-15-settings", "Controllers": ["Keypad"], "States": [{ "Image": "static/imgs/actions/tools-15-settings", "Title": "" }] },
-    { "UUID": "com.simeo.codex-deck.keycap-open-folder", "Name": "Keycap · Open Folder", "Tooltip": "Open a folder in Codex.", "Icon": "static/imgs/category-icon", "Controllers": ["Keypad"], "States": [{ "Image": "static/imgs/key", "Title": "" }] },
-    { "UUID": "com.simeo.codex-deck.keycap-add-files", "Name": "Keycap · Add Files", "Tooltip": "Add files to the current composer.", "Icon": "static/imgs/category-icon", "Controllers": ["Keypad"], "States": [{ "Image": "static/imgs/key", "Title": "" }] },
-    { "UUID": "com.simeo.codex-deck.keycap-skills", "Name": "Keycap · Skills", "Tooltip": "Open Codex Skills.", "Icon": "static/imgs/category-icon", "Controllers": ["Keypad"], "States": [{ "Image": "static/imgs/key", "Title": "" }] }
+    {
+      "UUID": "com.simeo.codex-deck.agent-1",
+      "Name": "Agent 1",
+      "Tooltip": "Open native Codex Micro agent slot 1.",
+      "Icon": "static/imgs/category-icon",
+      "PropertyInspectorPath": "static/property-inspector/agent.html",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "static/imgs/key",
+          "Title": ""
+        }
+      ]
+    },
+    {
+      "UUID": "com.simeo.codex-deck.agent-2",
+      "Name": "Agent 2",
+      "Tooltip": "Open native Codex Micro agent slot 2.",
+      "Icon": "static/imgs/category-icon",
+      "PropertyInspectorPath": "static/property-inspector/agent.html",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "static/imgs/key",
+          "Title": ""
+        }
+      ]
+    },
+    {
+      "UUID": "com.simeo.codex-deck.agent-3",
+      "Name": "Agent 3",
+      "Tooltip": "Open native Codex Micro agent slot 3.",
+      "Icon": "static/imgs/category-icon",
+      "PropertyInspectorPath": "static/property-inspector/agent.html",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "static/imgs/key",
+          "Title": ""
+        }
+      ]
+    },
+    {
+      "UUID": "com.simeo.codex-deck.agent-4",
+      "Name": "Agent 4",
+      "Tooltip": "Open native Codex Micro agent slot 4.",
+      "Icon": "static/imgs/category-icon",
+      "PropertyInspectorPath": "static/property-inspector/agent.html",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "static/imgs/key",
+          "Title": ""
+        }
+      ]
+    },
+    {
+      "UUID": "com.simeo.codex-deck.agent-5",
+      "Name": "Agent 5",
+      "Tooltip": "Open native Codex Micro agent slot 5.",
+      "Icon": "static/imgs/category-icon",
+      "PropertyInspectorPath": "static/property-inspector/agent.html",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "static/imgs/key",
+          "Title": ""
+        }
+      ]
+    },
+    {
+      "UUID": "com.simeo.codex-deck.agent-6",
+      "Name": "Agent 6",
+      "Tooltip": "Open native Codex Micro agent slot 6.",
+      "Icon": "static/imgs/category-icon",
+      "PropertyInspectorPath": "static/property-inspector/agent.html",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "static/imgs/key",
+          "Title": ""
+        }
+      ]
+    },
+    {
+      "UUID": "com.simeo.codex-deck.fast",
+      "Name": "Action 1 / Fast",
+      "Tooltip": "Send the current ACT06 Codex Micro action.",
+      "Icon": "static/imgs/category-icon",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "static/imgs/key",
+          "Title": ""
+        }
+      ]
+    },
+    {
+      "UUID": "com.simeo.codex-deck.approve",
+      "Name": "Action 2 / Approve",
+      "Tooltip": "Send the current ACT07 Codex Micro action.",
+      "Icon": "static/imgs/category-icon",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "static/imgs/key",
+          "Title": ""
+        }
+      ]
+    },
+    {
+      "UUID": "com.simeo.codex-deck.decline",
+      "Name": "Action 3 / Reject",
+      "Tooltip": "Send the current ACT08 Codex Micro action.",
+      "Icon": "static/imgs/category-icon",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "static/imgs/key",
+          "Title": ""
+        }
+      ]
+    },
+    {
+      "UUID": "com.simeo.codex-deck.fork",
+      "Name": "Action 4 / Fork",
+      "Tooltip": "Send the current ACT09 Codex Micro action.",
+      "Icon": "static/imgs/category-icon",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "static/imgs/key",
+          "Title": ""
+        }
+      ]
+    },
+    {
+      "UUID": "com.simeo.codex-deck.dictation",
+      "Name": "Action 5 / Push-to-talk",
+      "Tooltip": "Send the current ACT10/ACT11 Codex Micro action.",
+      "Icon": "static/imgs/category-icon",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "static/imgs/key",
+          "Title": ""
+        }
+      ]
+    },
+    {
+      "UUID": "com.simeo.codex-deck.send",
+      "Name": "Action 6 / Send",
+      "Tooltip": "Send the current ACT12 Codex Micro action.",
+      "Icon": "static/imgs/category-icon",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "static/imgs/key",
+          "Title": ""
+        }
+      ]
+    },
+    {
+      "UUID": "com.simeo.codex-deck.plan",
+      "Name": "Joystick Up",
+      "Tooltip": "Send the native Codex Micro joystick-up action.",
+      "Icon": "static/imgs/category-icon",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "static/imgs/key",
+          "Title": ""
+        }
+      ]
+    },
+    {
+      "UUID": "com.simeo.codex-deck.back",
+      "Name": "Joystick Left",
+      "Tooltip": "Send the native Codex Micro joystick-left action.",
+      "Icon": "static/imgs/category-icon",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "static/imgs/key",
+          "Title": ""
+        }
+      ]
+    },
+    {
+      "UUID": "com.simeo.codex-deck.forward",
+      "Name": "Joystick Right",
+      "Tooltip": "Send the native Codex Micro joystick-right action.",
+      "Icon": "static/imgs/category-icon",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "static/imgs/key",
+          "Title": ""
+        }
+      ]
+    },
+    {
+      "UUID": "com.simeo.codex-deck.sidebar",
+      "Name": "Joystick Down",
+      "Tooltip": "Send the native Codex Micro joystick-down action.",
+      "Icon": "static/imgs/category-icon",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "static/imgs/key",
+          "Title": ""
+        }
+      ]
+    },
+    {
+      "UUID": "com.simeo.codex-deck.reasoning",
+      "Name": "Reasoning Encoder Click",
+      "Tooltip": "Send the native Codex Micro encoder-click action.",
+      "Icon": "static/imgs/category-icon",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "static/imgs/key",
+          "Title": ""
+        }
+      ]
+    },
+    {
+      "UUID": "com.simeo.codex-deck.reasoning-down",
+      "Name": "Reasoning Effort Down",
+      "Tooltip": "Decrease composer reasoning effort through Codex's internal command path.",
+      "Icon": "static/imgs/category-icon",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "static/imgs/key",
+          "Title": ""
+        }
+      ]
+    },
+    {
+      "UUID": "com.simeo.codex-deck.reasoning-up",
+      "Name": "Reasoning Effort Up",
+      "Tooltip": "Increase composer reasoning effort through Codex's internal command path.",
+      "Icon": "static/imgs/category-icon",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "static/imgs/key",
+          "Title": ""
+        }
+      ]
+    },
+    {
+      "UUID": "com.simeo.codex-deck.new-task",
+      "Name": "New Task",
+      "Tooltip": "Open a new Codex task.",
+      "Icon": "static/imgs/category-icon",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "static/imgs/key",
+          "Title": ""
+        }
+      ]
+    },
+    {
+      "UUID": "com.simeo.codex-deck.host-toggle",
+      "Name": "Windows / Mac Target + Health",
+      "Tooltip": "Shows READY, DEGRADED, CONNECT, or OFFLINE for the selected Codex host and switches function, joystick, and reasoning keys between Windows and Mac. Agent keys always route to their originating host.",
+      "Icon": "static/imgs/category-icon",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "static/imgs/key",
+          "Title": ""
+        }
+      ]
+    },
+    {
+      "UUID": "com.simeo.codex-deck.usage-limit",
+      "Name": "Usage Limit",
+      "Tooltip": "Shows remaining Codex usage for Auto, 5-hour, or Weekly mode.",
+      "Icon": "static/imgs/category-icon",
+      "PropertyInspectorPath": "static/property-inspector/usage-limit.html",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "static/imgs/key",
+          "Title": ""
+        }
+      ]
+    },
+    {
+      "UUID": "com.simeo.codex-deck.usage-overview",
+      "Name": "Usage Overview",
+      "Tooltip": "Shows the 5-hour and weekly Codex usage windows together.",
+      "Icon": "static/imgs/category-icon",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "static/imgs/key",
+          "Title": ""
+        }
+      ]
+    },
+    {
+      "UUID": "com.simeo.codex-deck.rate-limit-reset",
+      "Name": "Rate Limit Reset",
+      "Tooltip": "Shows available reset credits. Hold for 1.2 seconds to consume one when applicable.",
+      "Icon": "static/imgs/category-icon",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "static/imgs/key",
+          "Title": ""
+        }
+      ]
+    },
+    {
+      "UUID": "com.simeo.codex-deck.keycap-fast",
+      "Name": "Keycap · Fast Mode",
+      "Tooltip": "Toggle Fast mode through the native Codex Micro command.",
+      "Icon": "static/imgs/category-icon",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "static/imgs/key",
+          "Title": ""
+        }
+      ]
+    },
+    {
+      "UUID": "com.simeo.codex-deck.keycap-approve",
+      "Name": "Keycap · Approve",
+      "Tooltip": "Approve the current Codex request.",
+      "Icon": "static/imgs/category-icon",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "static/imgs/key",
+          "Title": ""
+        }
+      ]
+    },
+    {
+      "UUID": "com.simeo.codex-deck.keycap-reject",
+      "Name": "Keycap · Reject",
+      "Tooltip": "Reject the current Codex request.",
+      "Icon": "static/imgs/category-icon",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "static/imgs/key",
+          "Title": ""
+        }
+      ]
+    },
+    {
+      "UUID": "com.simeo.codex-deck.keycap-split",
+      "Name": "Keycap · Fork Chat",
+      "Tooltip": "Fork the current Codex chat.",
+      "Icon": "static/imgs/category-icon",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "static/imgs/key",
+          "Title": ""
+        }
+      ]
+    },
+    {
+      "UUID": "com.simeo.codex-deck.keycap-new-task",
+      "Name": "Keycap · New Task",
+      "Tooltip": "Create a new Codex task through the native command.",
+      "Icon": "static/imgs/category-icon",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "static/imgs/key",
+          "Title": ""
+        }
+      ]
+    },
+    {
+      "UUID": "com.simeo.codex-deck.keycap-reasoning-up",
+      "Name": "Keycap · Reasoning Up",
+      "Tooltip": "Increase the current composer reasoning effort.",
+      "Icon": "static/imgs/category-icon",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "static/imgs/key",
+          "Title": ""
+        }
+      ]
+    },
+    {
+      "UUID": "com.simeo.codex-deck.keycap-reasoning-down",
+      "Name": "Keycap · Reasoning Down",
+      "Tooltip": "Decrease the current composer reasoning effort.",
+      "Icon": "static/imgs/category-icon",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "static/imgs/key",
+          "Title": ""
+        }
+      ]
+    },
+    {
+      "UUID": "com.simeo.codex-deck.keycap-codex",
+      "Name": "Keycap · Codex / Submit",
+      "Tooltip": "Submit the current composer through the native Codex Micro command.",
+      "Icon": "static/imgs/category-icon",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "static/imgs/key",
+          "Title": ""
+        }
+      ]
+    },
+    {
+      "UUID": "com.simeo.codex-deck.keycap-bug",
+      "Name": "Keycap · Bug / Feedback",
+      "Tooltip": "Open Codex feedback through the native Codex Micro command.",
+      "Icon": "static/imgs/category-icon",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "static/imgs/key",
+          "Title": ""
+        }
+      ]
+    },
+    {
+      "UUID": "com.simeo.codex-deck.keycap-openai-docs",
+      "Name": "Keycap · OpenAI Docs",
+      "Tooltip": "Open the official OpenAI developer documentation.",
+      "Icon": "static/imgs/category-icon",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "static/imgs/key",
+          "Title": ""
+        }
+      ]
+    },
+    {
+      "UUID": "com.simeo.codex-deck.keycap-terminal",
+      "Name": "Keycap · Terminal",
+      "Tooltip": "Toggle the Codex terminal.",
+      "Icon": "static/imgs/category-icon",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "static/imgs/key",
+          "Title": ""
+        }
+      ]
+    },
+    {
+      "UUID": "com.simeo.codex-deck.keycap-download",
+      "Name": "Keycap · Copy Chat Markdown",
+      "Tooltip": "Copy the current conversation as Markdown.",
+      "Icon": "static/imgs/category-icon",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "static/imgs/key",
+          "Title": ""
+        }
+      ]
+    },
+    {
+      "UUID": "com.simeo.codex-deck.keycap-archive",
+      "Name": "Keycap · Archive Chat",
+      "Tooltip": "Archive the current Codex chat.",
+      "Icon": "static/imgs/category-icon",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "static/imgs/key",
+          "Title": ""
+        }
+      ]
+    },
+    {
+      "UUID": "com.simeo.codex-deck.keycap-browser",
+      "Name": "Keycap · Browser",
+      "Tooltip": "Open a Codex browser tab.",
+      "Icon": "static/imgs/category-icon",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "static/imgs/key",
+          "Title": ""
+        }
+      ]
+    },
+    {
+      "UUID": "com.simeo.codex-deck.keycap-pin",
+      "Name": "Keycap · Pin / Unpin Chat",
+      "Tooltip": "Toggle the pinned state of the current chat.",
+      "Icon": "static/imgs/category-icon",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "static/imgs/key",
+          "Title": ""
+        }
+      ]
+    },
+    {
+      "UUID": "com.simeo.codex-deck.keycap-diff",
+      "Name": "Keycap · Review",
+      "Tooltip": "Toggle the Codex review view.",
+      "Icon": "static/imgs/category-icon",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "static/imgs/key",
+          "Title": ""
+        }
+      ]
+    },
+    {
+      "UUID": "com.simeo.codex-deck.keycap-play",
+      "Name": "Keycap · Run Environment Action",
+      "Tooltip": "Run the first configured environment action.",
+      "Icon": "static/imgs/category-icon",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "static/imgs/key",
+          "Title": ""
+        }
+      ]
+    },
+    {
+      "UUID": "com.simeo.codex-deck.keycap-git-commit",
+      "Name": "Keycap · Git Commit",
+      "Tooltip": "Open the native Codex Git commit flow.",
+      "Icon": "static/imgs/category-icon",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "static/imgs/key",
+          "Title": ""
+        }
+      ]
+    },
+    {
+      "UUID": "com.simeo.codex-deck.keycap-branch",
+      "Name": "Keycap · Branch Review",
+      "Tooltip": "Open the Codex review view with the branch keycap.",
+      "Icon": "static/imgs/category-icon",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "static/imgs/key",
+          "Title": ""
+        }
+      ]
+    },
+    {
+      "UUID": "com.simeo.codex-deck.keycap-merge",
+      "Name": "Keycap · Merge Review",
+      "Tooltip": "Open the Codex review view with the merge keycap.",
+      "Icon": "static/imgs/category-icon",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "static/imgs/key",
+          "Title": ""
+        }
+      ]
+    },
+    {
+      "UUID": "com.simeo.codex-deck.keycap-pull-request",
+      "Name": "Keycap · Create Pull Request",
+      "Tooltip": "Open the native Codex pull-request flow.",
+      "Icon": "static/imgs/category-icon",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "static/imgs/key",
+          "Title": ""
+        }
+      ]
+    },
+    {
+      "UUID": "com.simeo.codex-deck.keycap-add-photos",
+      "Name": "Keycap · Add Photos",
+      "Tooltip": "Add photos to the current composer.",
+      "Icon": "static/imgs/category-icon",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "static/imgs/key",
+          "Title": ""
+        }
+      ]
+    },
+    {
+      "UUID": "com.simeo.codex-deck.keycap-lab",
+      "Name": "Keycap · Lab / Settings",
+      "Tooltip": "Open Codex settings with the lab keycap.",
+      "Icon": "static/imgs/category-icon",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "static/imgs/key",
+          "Title": ""
+        }
+      ]
+    },
+    {
+      "UUID": "com.simeo.codex-deck.keycap-side-chat",
+      "Name": "Keycap · Side Chat",
+      "Tooltip": "Open a Codex side chat.",
+      "Icon": "static/imgs/category-icon",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "static/imgs/key",
+          "Title": ""
+        }
+      ]
+    },
+    {
+      "UUID": "com.simeo.codex-deck.keycap-tasks",
+      "Name": "Keycap · Manage Tasks",
+      "Tooltip": "Open Codex task management.",
+      "Icon": "static/imgs/category-icon",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "static/imgs/key",
+          "Title": ""
+        }
+      ]
+    },
+    {
+      "UUID": "com.simeo.codex-deck.keycap-settings",
+      "Name": "Keycap · Settings",
+      "Tooltip": "Open Codex settings.",
+      "Icon": "static/imgs/category-icon",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "static/imgs/key",
+          "Title": ""
+        }
+      ]
+    },
+    {
+      "UUID": "com.simeo.codex-deck.keycap-open-folder",
+      "Name": "Keycap · Open Folder",
+      "Tooltip": "Open a folder in Codex.",
+      "Icon": "static/imgs/category-icon",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "static/imgs/key",
+          "Title": ""
+        }
+      ]
+    },
+    {
+      "UUID": "com.simeo.codex-deck.keycap-add-files",
+      "Name": "Keycap · Add Files",
+      "Tooltip": "Add files to the current composer.",
+      "Icon": "static/imgs/category-icon",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "static/imgs/key",
+          "Title": ""
+        }
+      ]
+    },
+    {
+      "UUID": "com.simeo.codex-deck.keycap-skills",
+      "Name": "Keycap · Skills",
+      "Tooltip": "Open Codex Skills.",
+      "Icon": "static/imgs/category-icon",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "static/imgs/key",
+          "Title": ""
+        }
+      ]
+    }
   ]
 }

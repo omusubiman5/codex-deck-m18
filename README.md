@@ -1,69 +1,20 @@
 # Codex Deck M18
 
-VSD Inside M18を、Windows版またはmacOS版Codex Desktopの**Codex Micro操作デバイス**として使うためのOSSプロジェクトです。現在の推奨構成はメーカー標準アプリのVSD Craftです。Linuxは対象外です。
+VSD Inside M18を、Windows版またはmacOS版Codex Desktopの**Codex Micro操作デバイス**として使うためのOSSプロジェクトです。
 
-上流の[Codex Deck](https://github.com/dazer1234/codex-stream-deck)が持つCodex Micro接続・状態取得・描画・イベント送信機能を維持し、M18のUSB通信、LCD転送、シーン管理はVSD Craftへ任せます。旧mirajazz直接接続方式もロールバック用としてソースに残していますが、VSD Craftと同時には起動しません。
+導入方式は2つあります。
+
+| 方式 | 状態 | 対応OS | 依存 | ライセンス上の性質 |
+|---|---|---|---|---|
+| [VSD Craft転用](#導入vsd-craft推奨) | **推奨** | Windows / macOS | VSD Craft必須（プロプライエタリ） | 本リポジトリはOSSだが、実行にはクローズドソース製品を要する |
+| [M18直接接続](#導入m18直接接続フルoss構成) | 維持対象のフルOSS構成 | Windows | 追加のプロプライエタリ製品なし | MPL-2.0 + GPL-3.0 + MITで構成するフルOSS経路 |
+
+上流の[Codex Deck](https://github.com/dazer1234/codex-stream-deck)が持つCodex Micro接続・状態取得・描画・イベント送信機能は、どちらの方式でも維持しています。推奨構成では、M18のUSB通信、LCD転送、シーン管理をVSD Craftへ任せます。Linuxは対象外です。
 
 > [!IMPORTANT]
-> OpenAI、Codex Deck、M18メーカーによる公式製品ではありません。Codex Desktopの非公開内部インターフェースを利用するため、Codexの更新後に追従修正が必要になる可能性があります。
+> OpenAI、Codex Deck、M18メーカーによる公式製品ではありません。Codex Desktopの非公開内部インターフェースを利用するため、Codexの更新後に追従修正が必要になる可能性があります。動作確認済みのCodex Desktopは 26.810.7004.0、VSD Craftは 3.10.188.226 です（[調査記録](docs/vsd-craft/原因調査.md)）。
 
-## 対応デバイスの購入情報
-
-- [VSDINSIDE M18（Amazon.co.jp）](https://www.amazon.co.jp/dp/B0GT8Q8KGQ)
-- 2026年8月16日時点：`￥8,999`、さらに`￥2,001 OFF`クーポン表示あり
-
-価格、クーポン、在庫、適用条件は変更される場合があります。購入画面で最新情報を確認してください。このリンクはAmazonアソシエイトリンクではありません。
-
-## 推奨構成：VSD Craft転用
-
-```text
-Codex Desktop
-    ↕ Codex Micro / CDP
-Codex Deckプラグイン
-    ↕ VSD公式SDK互換WebSocket
-VSD Craft
-    ↕ メーカー標準USB制御
-VSD Inside M18
-```
-
-VSD Craftの標準UIでキーをドラッグ配置します。実機には次の3環境を設定済みです。
-
-- 下左：`Codex Micro` — Agent 1～6、FAST、APPR、REJ、SPLIT、MIC、CODEX、上・左・右
-- 下中央：`Codex Tools` — Reasoning、New Task、使用量、DIFF、Browser、Settingsなど
-- 下右：`デフォルトシーン` — M18メーカー標準面
-
-下3物理ボタンにはVSD Craft標準の`シーンシフト`だけを設定し、Codex操作は割り当てません。3環境のどの面からでも同じ位置へ直接切り替わります。
-
-会議用には`TEAMS`、`MEET`、`ZOOM`、`Discord`の4シーンも作成できます。各シーンへ15個のWindowsショートカットと専用アイコンを設定する手順は[会議パネル](docs/vsd-craft/MEETING_PANELS.md)を参照してください。
-
-ビルドと検証：
-
-```powershell
-npm run validate:vsd-craft
-```
-
-Windowsへの導入：
-
-```powershell
-.\scripts\Install-VSDCraft-CodexDeck.ps1 `
-  -VSDCraftInstallerPath 'C:\path\to\VSD-Craft-Installer_Windows.exe' `
-  -Launch
-```
-
-macOSへの導入（VSD Craft公式macOS版とNode.js 20以上を先に導入）：
-
-```zsh
-chmod +x scripts/install-vsd-craft-codex-deck-macos.sh
-./scripts/install-vsd-craft-codex-deck-macos.sh
-```
-
-macOS版はVSD Craftの標準保存先`~/Library/Application Support/HotSpot/StreamDock/plugins`へプラグインを配置し、既存版を`~/Library/Application Support/CodexDeck/backups`へ退避します。Codex接続には既存のmacOS LaunchAgentをそのまま使用します。詳細は[macOS導入手順](docs/vsd-craft/MACOS.md)を参照してください。
-
-詳細は[ニーズ](docs/vsd-craft/ニーズ.md)、[修正方針](docs/vsd-craft/修正方針.md)、[実行方針](docs/vsd-craft/実行方針.md)を参照してください。
-
-## 旧方式：M18直接接続
-
-以下はロールバック用のmirajazz直接接続方式です。VSD Craft運用時には起動しません。
+---
 
 ## Codex Deckとは
 
@@ -95,7 +46,7 @@ Codex Deckの機能はコードから削除していません。ただしM18の1
 | `ACT06`～`ACT12` | 維持 | あり |
 | Joystick上下左右 | 維持 | 上・左・右のみ |
 | Encoder押下／Reasoning増減 | 維持 | なし |
-| Codex環境アクション1～3 | 維持 | 下段3ボタン |
+| Codex環境アクション1～3 | 維持 | フルOSS構成のみ（下段3ボタン） |
 | 公式Keycap単独コマンド | 維持 | なし |
 | Usage Limit／Usage Overview | 維持 | なし |
 | Rate Limit Reset | 維持 | なし |
@@ -109,18 +60,14 @@ Codex Deckの機能はコードから削除していません。ただしM18の1
 ## M18版の特徴
 
 - M18の15個のLCDキーでCodex Microの主要操作を実行
-- 下段3ボタンはCodex Microと同じネイティブコマンド`environmentAction1`～`environmentAction3`を実行
 - 6つのCodexタスク状態をLCDへ同期表示
 - Codex Micro固有のFast、Approve、Reject、Fork、Dictation、Sendをそのまま送信
 - Plan、Back、Forwardに対応
-- CodexまたはUSB切断後に再接続する常駐watcherを同梱
-- キー入力を診断ログへ記録
 - M18のファームウェア、Codex Desktop本体、USBドライバーを改変しない
-- OpenDeck、Elgato Stream Deck、仮想HID、キーボードショートカットは不要
+- OpenDeck、Elgato Stream Deckハードウェア、仮想HID、キーボードショートカットは不要
+- フルOSS構成では、CodexまたはUSB切断後に再接続する常駐watcherと、キー入力の診断ログを同梱
 
 ## 対応機器
-
-現在のM18アダプターは、次のUSB IDを持つ実機だけを受け付けます。
 
 | 項目 | 値 |
 |---|---|
@@ -130,29 +77,139 @@ Codex Deckの機能はコードから削除していません。ただしM18の1
 | LCDキー | 15 |
 | 下段ボタン | 3 |
 
+VSD Craft運用時のUSB通信はVSD Craftが行います。上記のUSB IDによる機器判定は、フルOSS構成のM18アダプターが接続先を限定するためのものです。
+
 ## キー割当
 
-| M18入力 | Codex Micro機能 |
-|---|---|
-| LCD 1–6 | Agent 1–6 |
-| LCD 7 | `ACT06`（既定：Fast） |
-| LCD 8 | `ACT07`（既定：Approve） |
-| LCD 9 | `ACT08`（既定：Reject） |
-| LCD 10 | `ACT09`（既定：Fork） |
-| LCD 11 | `ACT10/11`（既定：Dictation） |
-| LCD 12 | `ACT12`（既定：Send） |
-| LCD 13 | Plan（Joystick Up） |
-| LCD 14 | Back（Joystick Left） |
-| LCD 15 | Forward（Joystick Right） |
-| 下段左 | Codex環境アクション1（`environmentAction1`） |
-| 下段中央 | Codex環境アクション2（`environmentAction2`） |
-| 下段右 | Codex環境アクション3（`environmentAction3`） |
+LCD 15キーの割当は両方式で共通です。
 
-下段3ボタンはM18内のページやプロファイルを切り替えません。Codex Desktopが登録している環境アクションのコマンドIDを、Codex Microと同じコマンドランナーへ渡します。各スロットが何をするかはCodex側の設定に従います。
+| M18入力 | Codex Micro機能 | VSD Craft上のキー名 |
+|---|---|---|
+| LCD 1–6 | Agent 1–6 | Agent 1–6 |
+| LCD 7 | `ACT06`（既定：Fast） | FAST |
+| LCD 8 | `ACT07`（既定：Approve） | APPR |
+| LCD 9 | `ACT08`（既定：Reject） | REJ |
+| LCD 10 | `ACT09`（既定：Fork） | SPLIT |
+| LCD 11 | `ACT10/11`（既定：Dictation） | MIC |
+| LCD 12 | `ACT12`（既定：Send） | CODEX |
+| LCD 13 | Plan（Joystick Up） | 上 |
+| LCD 14 | Back（Joystick Left） | 左 |
+| LCD 15 | Forward（Joystick Right） | 右 |
 
 LCD 7～12は名称をハードコードしたマクロではなく、Codex Microのアクションスロットです。Codex側で割当を変更すると、Codex Deckが取得する表示と実行内容も追従します。表中の名称はCodex Microの既定構成を示します。
 
-## 仕組み
+**下段3物理ボタンの扱いは方式ごとに異なります。**
+
+| 方式 | 下段左 | 下段中央 | 下段右 |
+|---|---|---|---|
+| VSD Craft（推奨） | シーンシフト | シーンシフト | シーンシフト |
+| M18直接接続（フルOSS構成） | `environmentAction1` | `environmentAction2` | `environmentAction3` |
+
+フルOSS構成の下段3ボタンは、M18内のページやプロファイルを切り替えません。Codex Desktopが登録している環境アクションのコマンドIDを、Codex Microと同じコマンドランナーへ渡します。各スロットが何をするかはCodex側の設定に従います。
+
+---
+
+## 導入：VSD Craft（推奨）
+
+```text
+Codex Desktop
+    ↕ Codex Micro / CDP
+Codex Deckプラグイン
+    ↕ VSD公式SDK互換WebSocket
+VSD Craft
+    ↕ メーカー標準USB制御
+VSD Inside M18
+```
+
+### 必要環境
+
+- Windows 10以降、またはmacOS
+- Codex Desktop
+- Node.js 20以降
+- VSD Craft（Windows版インストーラ、またはmacOS版アプリ）
+- USB接続された対応M18
+- Windowsのみ：ESETコマンドラインスキャナ、または後述の`-SkipEsetScan`
+
+RustとC++ツールチェーンは**不要**です。これらが必要なのはフルOSS構成のみです。
+
+### シーン構成
+
+VSD Craftの標準UIでキーをドラッグ配置します。実機には次の3環境を設定済みです。
+
+- 下左：`Codex Micro` — Agent 1～6、FAST、APPR、REJ、SPLIT、MIC、CODEX、上・左・右
+- 下中央：`Codex Tools` — Reasoning、New Task、使用量、DIFF、Browser、Settingsなど
+- 下右：`デフォルトシーン` — M18メーカー標準面
+
+下3物理ボタンにはVSD Craft標準の`シーンシフト`だけを設定し、Codex操作は割り当てません。3環境のどの面からでも同じ位置へ直接切り替わります。
+
+### Windowsへの導入
+
+Windows版インストーラはビルドを行いません。**先にプラグインをビルドしてください。**
+
+```powershell
+npm ci
+npm run validate:vsd-craft
+```
+
+`validate:vsd-craft`は`dist-vsd-craft\com.simeo.codex-deck.sdPlugin`を生成し、manifestを検証します。この成果物が無い状態でインストーラを実行すると失敗します。
+
+続いてインストーラを実行します。
+
+```powershell
+.\scripts\Install-VSDCraft-CodexDeck.ps1 `
+  -VSDCraftInstallerPath 'C:\path\to\VSD-Craft-Installer_Windows.exe' `
+  -Launch
+```
+
+スクリプトは実行前に次を検査します。いずれも満たさない場合は処理を中止します。
+
+- `dist-vsd-craft`のプラグインmanifestが期待する互換設定でビルドされていること
+- VSD CraftインストーラのAuthenticode署名が有効であること
+- ESETコマンドラインスキャナ（`C:\Program Files\ESET\ESET Security\ecls.exe`）が存在し、検査を通過すること
+
+利用可能なスイッチ：
+
+| スイッチ | 用途 |
+|---|---|
+| `-VSDCraftInstallerPath` | 必須。VSD Craft公式インストーラのパス |
+| `-SkipEsetScan` | ESET未導入環境で事前スキャンを省略する |
+| `-SkipVSDCraftInstall` | VSD Craft導入済みで、プラグインだけ更新する |
+| `-Launch` | 配置後にVSD Craftを起動する |
+
+スクリプトはフルOSS構成のランタイムを停止し、スタートアップ登録を`%LOCALAPPDATA%\CodexDeck\disabled-startup`へ退避します。既存プラグインは`%LOCALAPPDATA%\CodexDeck\backups`へバックアップされます。
+
+### macOSへの導入
+
+VSD Craft公式macOS版とNode.js 20以上を先に導入してください。スクリプトがビルドから配置まで実行するため、事前ビルドは不要です。
+
+```zsh
+chmod +x scripts/install-vsd-craft-codex-deck-macos.sh
+./scripts/install-vsd-craft-codex-deck-macos.sh
+```
+
+プラグインはVSD Craftの標準保存先`~/Library/Application Support/HotSpot/StreamDock/plugins`へ配置し、既存版を`~/Library/Application Support/CodexDeck/backups`へ退避します。Codex接続には既存のmacOS LaunchAgentをそのまま使用します。詳細は[macOS導入手順](docs/vsd-craft/MACOS.md)を参照してください。
+
+### 会議パネル（Windows専用）
+
+`TEAMS`、`MEET`、`ZOOM`、`Discord`の4シーンを追加できます。各シーンは5列×3行の15キーで、キー位置を4サービス共通にします。
+
+手作業はVSD CraftのUIで空シーンを4つ作るところまでで、名前・ホットキー・アイコンの設定はスクリプトが行います。
+
+```powershell
+npm run configure:meeting-panels
+```
+
+ホットキーはWindowsショートカットに依存するため、この機能はWindows専用です。キー配置と注意事項は[会議パネル](docs/vsd-craft/MEETING_PANELS.md)を参照してください。
+
+### 設計資料
+
+[ニーズ](docs/vsd-craft/ニーズ.md) / [修正方針](docs/vsd-craft/修正方針.md) / [実行方針](docs/vsd-craft/実行方針.md) / [原因調査](docs/vsd-craft/原因調査.md) / [対応報告](docs/vsd-craft/対応報告.md)
+
+---
+
+## 導入：M18直接接続（フルOSS構成）
+
+追加のプロプライエタリ製品を必要としない、維持対象のフルOSS構成です。VSD Craft運用時には同時起動しません。VSD Craftインストーラは競合防止のため、この構成のランタイムとスタートアップ登録を自動的に無効化します。
 
 ```mermaid
 flowchart LR
@@ -164,7 +221,9 @@ flowchart LR
 
 Node.jsランタイムは上流Codex Deckの`DeckController`と`CodexMicroRendererBridge`を利用します。RustアダプターはM18の入力受信とLCD画像転送だけを担当します。
 
-## 必要環境
+RustアダプターはGPL-3.0-only、Node.js側はMITです。両者を同一バイナリへリンクせず、別プロセス間のJSON Lines/stdio通信に限定することで、配布単位とライセンス境界を明確にしています。
+
+### 必要環境
 
 - Windows 10以降
 - Codex Desktop
@@ -173,7 +232,7 @@ Node.jsランタイムは上流Codex Deckの`DeckController`と`CodexMicroRender
 - Windows向けRustをビルドできるC++ツールチェーン
 - USB接続された対応M18
 
-## ビルド
+### ビルド
 
 PowerShellでプロジェクトフォルダを開き、次を実行します。
 
@@ -187,7 +246,7 @@ npm run build:m18
 
 完成物は`dist\m18`に生成されます。
 
-## 接続確認
+### 接続確認
 
 実行前に、M18とCodexブリッジだけを検査できます。
 
@@ -198,7 +257,7 @@ Set-Location .\dist\m18
 
 `-DryRun`はファームウェアや設定を変更しません。
 
-## 実行
+### 実行
 
 Codex DesktopとM18を接続した状態で実行します。
 
@@ -207,13 +266,13 @@ Set-Location .\dist\m18
 .\Start-CodexDeck-M18.ps1
 ```
 
-Codex Desktopがブリッジなしで既に起動している場合は、Codexを通常終了してから再実行してください。明示的にCodexを再起動させる場合だけ`-ForceRestart`を使用します。
+Codex Desktopがブリッジなしで既に起動している場合は、Codexを通常終了してから再実行してください。Codexを明示的に再起動させたい場合だけ`-ForceRestart`を使用します。
 
 ```powershell
 .\Start-CodexDeck-M18.ps1 -ForceRestart
 ```
 
-## 常駐運用
+### 常駐運用
 
 `dist\m18`を固定したフォルダへ配置し、次のスクリプトをWindowsログオン時に起動するよう登録します。
 
@@ -223,54 +282,74 @@ powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -F
 
 watcherはランタイム終了後に再起動を試み、CodexやM18の再接続に追従します。配置後にフォルダを移動すると起動パスが無効になるため、先に固定配置してください。
 
-## ログ
+### ログ
 
 | ファイル | 内容 |
 |---|---|
-| `%LOCALAPPDATA%\CodexDeck\m18.log` | watcher、Codex接続、M18接続、描画同期 |
+| watcherスクリプトを置いたフォルダの**親**に生成される`m18.log` | watcher、Codex接続、M18接続、描画同期 |
 | `%LOCALAPPDATA%\CodexDeck\m18-events.log` | `key_down` / `key_up`と物理キー番号 |
 | `%LOCALAPPDATA%\CodexDeck\codex-micro-bridge.json` | 現在のローカルCDPポート状態 |
 
-入力が反応しない場合は、最初に`m18-events.log`へイベントが増えているか確認してください。
+`m18.log`だけは出力先が固定パスではありません。上記の常駐運用例のように`C:\path\to\CodexDeck\M18\`へ配置した場合、ログは`C:\path\to\CodexDeck\m18.log`に出力されます。
+
+入力が反応しない場合は、最初に`m18-events.log`へイベントが増えているか確認してください。増えていない場合は[トラブルシューティング](docs/TROUBLESHOOTING.md)を参照してください。
+
+### 設計資料
+
+[Codex Micro版ニーズ](docs/codex-micro-m18/ニーズ.md) / [修正方針](docs/codex-micro-m18/修正方針.md) / [実行方針](docs/codex-micro-m18/実行方針.md) / [M18セットアップ](docs/M18.md)
+
+---
 
 ## 開発用コマンド
 
 ```powershell
-npm run check       # TypeScript型検査
-npm test            # Nodeテスト一式
-npm run build       # 上流Codex Deckとランチャーをビルド
-npm run build:m18   # RustアダプターとM18ランタイムをビルド
-npm run start:m18   # ビルド済みM18ランタイムを直接起動
+npm run check                     # TypeScript型検査
+npm test                          # Nodeテスト一式
+npm run build                     # 上流Codex Deckとランチャーをビルド
+npm run build:vsd-craft           # VSD Craft向けプラグインをビルド
+npm run validate:vsd-craft        # ビルドしてmanifestを検証
+npm run configure:meeting-panels  # 会議パネル4シーンを設定（Windows）
+npm run build:m18                 # RustアダプターとM18ランタイムをビルド（フルOSS構成）
+npm run start:m18                 # ビルド済みM18ランタイムを直接起動（フルOSS構成）
 ```
 
-## 設計資料
+## 対応デバイスの購入情報
 
-- [M18セットアップ](docs/M18.md)
-- [Codex Micro版ニーズ](docs/codex-micro-m18/ニーズ.md)
-- [Codex Micro版修正方針](docs/codex-micro-m18/修正方針.md)
-- [Codex Micro版実行方針](docs/codex-micro-m18/実行方針.md)
-- [初期ニーズ](ニーズ.md)
-- [初期修正方針](修正方針.md)
-- [初期実行方針](実行方針.md)
+- [VSDINSIDE M18（Amazon.co.jp）](https://www.amazon.co.jp/dp/B0GT8Q8KGQ)
+- 2026年8月16日時点：`￥8,999`、さらに`￥2,001 OFF`クーポン表示あり
+
+価格、クーポン、在庫、適用条件は変更される場合があります。購入画面で最新情報を確認してください。このリンクはAmazonアソシエイトリンクではありません。
+
+## ドキュメント
+
+現行方式の資料は各導入セクションの「設計資料」にまとめています。以下はリポジトリ全体に関わる資料です。
+
+- [アーキテクチャ](docs/ARCHITECTURE.md)
+- [トラブルシューティング](docs/TROUBLESHOOTING.md)
+- [Windows単独構成](docs/WINDOWS.md)
 - [セキュリティ方針](SECURITY.md)
+- [README改訂の原因調査](docs/readme/原因調査.md) / [対応報告](docs/readme/対応報告.md)
+- [OSS選択・配布物レビューの原因調査](docs/oss-review/原因調査.md) / [対応報告](docs/oss-review/対応報告.md)
+
+リポジトリルートの[初期ニーズ](ニーズ.md)、[初期修正方針](修正方針.md)、[初期実行方針](実行方針.md)は、M18対応着手時点の記録です。現行方式は`docs/vsd-craft/`の資料を参照してください。
 
 ## 上流から継承している機能
 
-このリポジトリは上流Codex DeckのStream Deck、マルチホスト、iPhone companion実装も保持しています。ただし、このREADMEの導入手順と実機検証範囲はWindows＋M18です。
+このリポジトリは上流Codex DeckのStream Deck、マルチホスト、iPhone companion実装も保持しています。ただし、このREADMEの導入手順と実機検証範囲はM18です。
 
-上流のiPhone companionはソース配布のみです。A Mac with Xcode is required to build and install it, even when the phone will control only Windows. App Store、TestFlight、署名済みIPAでの配布はありません。詳細は[上流由来のiPhone導入手順](docs/IOS_INSTALL.md)を参照してください。
+上流のiPhone companionはソース配布のみです。A Mac with Xcode is required to build and install it, even when the phone will control only Windows.（ビルドとインストールにはXcodeを導入したMacが必要で、これは操作対象がWindowsのみの場合も変わりません。）App Store、TestFlight、署名済みIPAでの配布はありません。詳細は[上流由来のiPhone導入手順](docs/IOS_INSTALL.md)を参照してください。
 
 ## 謝辞
 
-上流Codex Deckのモバイル構想は、[Shikhar (@xikhar)](https://x.com/xikhar)が公開したコンセプトから着想を得ています。Codex Deck Mobileは上流プロジェクト独自のブリッジ、操作系、ビジュアルを使ったindependent implementationであり、そのコンセプトのソースコードや画像は含みません。
+上流Codex Deckのモバイル構想は、[Shikhar (@xikhar)](https://x.com/xikhar)が公開したコンセプトから着想を得ています。Codex Deck Mobileは上流プロジェクト独自のブリッジ、操作系、ビジュアルを使ったindependent implementation（独立実装）であり、そのコンセプトのソースコードや画像は含みません。
 
 ## OSSとライセンス
 
 - 上流Codex DeckとTypeScript側の変更：MIT License
-- M18アダプター：GPL-3.0-only
+- M18アダプター：GPL-3.0-only（MIT側とは別プロセス＋JSON Lines/stdioで分離）
 - mirajazz：MPL-2.0
 - M18プロトコル検証情報の参照元：[ibanks42/opendeck-m18](https://github.com/ibanks42/opendeck-m18)（GPL-3.0）
 
-詳細は[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)、[MIT LICENSE](LICENSE)、[M18 adapter GPL-3.0 LICENSE](m18-adapter/LICENSE)を参照してください。
+詳細は[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)、[MIT LICENSE](LICENSE)、[M18 adapter GPL-3.0 LICENSE](m18-adapter/LICENSE)を参照してください。ビルド済みプラグインにも`LICENSE`と、実際にバンドルされたJavaScript依存のライセンス全文を集約した`THIRD_PARTY_NOTICES.md`を同梱します。`dist/m18`にはこれらに加えて、アダプターバイナリ用の`LICENSE.adapter-GPL-3.0`を同梱します。
 
 Codex、OpenAI、Stream Deck、Elgatoおよび各製品名・商標は、それぞれの権利者に帰属します。

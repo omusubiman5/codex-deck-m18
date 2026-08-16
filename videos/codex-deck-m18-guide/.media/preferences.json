@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "preferences": {
+    "destination": {
+      "value": "youtube",
+      "confirmed_in": [
+        "codex-deck-m18-guide"
+      ],
+      "updated_at": "2026-08-16T04:21:44.758Z"
+    },
+    "aspect": {
+      "value": "1920x1080",
+      "confirmed_in": [
+        "codex-deck-m18-guide"
+      ],
+      "updated_at": "2026-08-16T04:21:44.842Z"
+    },
+    "language": {
+      "value": "ja",
+      "confirmed_in": [
+        "codex-deck-m18-guide"
+      ],
+      "updated_at": "2026-08-16T04:21:44.918Z"
+    },
+    "flow": {
+      "value": "automation",
+      "confirmed_in": [
+        "codex-deck-m18-guide"
+      ],
+      "updated_at": "2026-08-16T04:21:44.976Z"
+    },
+    "storyboard": {
+      "value": "yes",
+      "confirmed_in": [
+        "codex-deck-m18-guide"
+      ],
+      "updated_at": "2026-08-16T04:21:45.094Z"
+    },
+    "style_preset.faceless-explainer": {
+      "value": "broadside",
+      "confirmed_in": [
+        "codex-deck-m18-guide"
+      ],
+      "updated_at": "2026-08-16T04:24:20.495Z"
+    }
+  },
+  "sightings": {}
+}

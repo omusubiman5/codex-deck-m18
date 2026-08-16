@@ -11,13 +11,20 @@ permissions:
 jobs:
   verify:
     runs-on: windows-latest
+    strategy:
+      matrix:
+        node-version: [20, 24]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: ${{ matrix.node-version }}
           cache: npm
+      - uses: dtolnay/rust-toolchain@stable
       - run: npm ci
       - run: npm run check
       - run: npm test
       - run: npm run validate
+      - run: npm run validate:vsd-craft
+      - run: npm run build:m18
+      - run: node scripts/audit-release.mjs dist/com.simeo.codex-deck.sdPlugin dist-vsd-craft/com.simeo.codex-deck.sdPlugin dist/m18

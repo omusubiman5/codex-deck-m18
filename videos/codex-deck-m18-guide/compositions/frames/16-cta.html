@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8">
+  </head>
+  <body>
+    <template>
+      <style>
+  #root {
+    position: absolute; inset: 0; overflow: hidden;
+    background: #0B0E11; color: #E9F1F0;
+    font-family: "Noto Sans JP", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+    font-weight: 400;
+  }
+  .chrome { position: absolute; left: 96px; right: 96px; display: flex; justify-content: space-between;
+            font-family: "IBM Plex Mono", monospace; font-size: 18px; letter-spacing: .14em;
+            text-transform: uppercase; color: #2FD8C6; }
+  .chrome.top { top: 56px; border-bottom: 1px solid #262828; padding-bottom: 14px; }
+  .chrome.bot { bottom: 48px; border-top: 1px solid #262828; padding-top: 14px; color: #6C7574; }
+  .stage { position: absolute; left: 96px; right: 96px; top: 150px; bottom: 130px;
+           display: flex; flex-direction: column; justify-content: center; gap: 24px; }
+  .stack { display: flex; flex-direction: column; gap: 18px; }
+  .stack.center { align-items: center; text-align: center; }
+  .line.big { font-size: 96px; font-weight: 700; line-height: 1.15; }
+  .line.mid { font-size: 40px; font-weight: 400; line-height: 1.67; }
+  .accent { color: #2FD8C6; }
+  .rule { width: 36px; height: 2px; background: #2FD8C6; }
+  .lbl { font-family: "IBM Plex Mono", monospace; font-size: 20px; letter-spacing: .14em;
+         text-transform: uppercase; color: #9AA3A2; margin-bottom: 12px; }
+  .note, .sidenote { font-size: 26px; line-height: 1.67; color: #9AA3A2; }
+  .sidenote { position: absolute; left: 96px; bottom: 96px; }
+  .split { display: flex; gap: 48px; }
+  .split.ruled > .col + .col { border-left: 1px solid #262828; padding-left: 48px; }
+  .col { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+  .col.center { align-items: center; }
+  .row { display: flex; gap: 18px; }
+  .blk { border: 1px solid #3A4241; border-radius: 3px; background: #12181A;
+         display: flex; align-items: center; justify-content: center; text-align: center;
+         font-size: 22px; line-height: 1.4; }
+  .key { width: 150px; height: 150px; }
+  .cell { height: 132px; font-size: 20px; }
+  .cell.wide { flex: 1; height: 132px; }
+  .btn { flex: 1; height: 76px; font-size: 20px; }
+  .panel { padding: 32px; min-height: 220px; font-size: 26px; line-height: 1.67; }
+  .hero { width: 320px; height: 320px; flex-direction: column; gap: 12px; font-size: 34px; font-weight: 700; }
+  .sub { font-size: 22px; font-weight: 400; color: #9AA3A2; }
+  .grid15 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 18px; }
+  .grid6 { display: grid; grid-template-columns: repeat(6, 1fr); gap: 18px; }
+  .deck { display: flex; flex-direction: column; gap: 24px; }
+  .bottombtns { gap: 18px; }
+  .tags { gap: 14px; flex-wrap: wrap; justify-content: center; }
+  .pill { border: 1px solid #3A4241; border-radius: 30px; padding: 10px 26px; font-size: 24px; }
+  .chain { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .chainrow { width: 720px; height: 96px; font-size: 30px; }
+  .accentbox { border-color: #2FD8C6; color: #2FD8C6; }
+  .conn { font-family: "IBM Plex Mono", monospace; font-size: 18px; letter-spacing: .12em;
+          color: #6C7574; text-transform: uppercase; }
+  .statuslist { display: flex; flex-direction: column; gap: 16px; font-size: 30px; line-height: 1.67; }
+  .strow { display: flex; align-items: center; gap: 18px; }
+  .dot { width: 20px; height: 20px; border-radius: 50%; border: 1px solid #3A4241; display: inline-block; }
+  .term { flex-direction: column; align-items: flex-start; gap: 16px; padding: 40px;
+          font-family: "IBM Plex Mono", monospace; font-size: 28px; }
+  .cmd { color: #E9F1F0; }
+  .cmd.ok { color: #2FD8C6; }
+  .navrow { gap: 18px; }
+</style>
+
+      <div data-hf-id="hf-nvtj" id="root" data-composition-id="16-cta" data-width="1920" data-height="1080">
+        <div data-hf-id="hf-yjv7" class="chrome top"><span data-hf-id="hf-hid1">CTA</span><span data-hf-id="hf-q53m">16 / 16</span></div>
+        <div data-hf-id="hf-tan6" class="stage">
+    <div data-hf-id="hf-6z2j" class="stack center">
+      <div data-hf-id="hf-fq2r" class="line big">手元の M18 を、</div>
+      <div data-hf-id="hf-0ve0" class="line big accent">Codex の操作パネルに。</div>
+      <div data-hf-id="hf-a46i" class="rule"></div>
+      <div data-hf-id="hf-ivs8" class="line mid">github.com — codex-deck-m18</div>
+    </div>
+        </div>
+        <div data-hf-id="hf-9tot" class="chrome bot"><span data-hf-id="hf-7fj7">CODEX DECK M18</span><span data-hf-id="hf-nxnp">SKETCH</span></div>
+      </div>
+
+      <script>
+        window.__timelines = window.__timelines || {};
+        window.__timelines["16-cta"] = gsap.timeline({ paused: true });
+      </script>
+    </template>
+  </body>
+</html>

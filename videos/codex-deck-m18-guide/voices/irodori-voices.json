@@ -1,0 +1,108 @@
+{
+  "$comment": [
+    "Frozen Irodori-TTS voice presets, approved 2026-08-13.",
+    "Every sampling parameter is written out EXPLICITLY -- including ones that",
+    "match the current infer.py defaults -- so a future upstream default change",
+    "cannot silently move an approved voice. Nothing here may be omitted at call",
+    "time. seed is part of the preset, not a runtime option: hyperframes requires",
+    "deterministic rendering, and Irodori's --seed defaults to random.",
+    "Voices were designed caption-only (--no-ref), so no reference audio or",
+    "speaker embedding is needed and cfg_scale_speaker does not apply."
+  ],
+  "version": 1,
+  "approved_at": "2026-08-13",
+  "checkpoint": "Aratako/Irodori-TTS-v4.1-Small",
+  "codec_repo": "Aratako/Semantic-DACVAE-Japanese-32dim",
+
+  "$engine_note": [
+    "The Irodori checkout is a SHARED engine, deliberately not copied into this",
+    "project: it carries a venv plus a multi-GB HuggingFace model cache, and",
+    "duplicating it per video would be waste, not isolation. Its location is",
+    "declared here instead of hard-coded in each script, and IRODORI_HOME",
+    "overrides it, so moving the engine does not require editing code."
+  ],
+  "engine": {
+    "home": "C:/Projects/irodori/engine",
+    "python": ".venv/Scripts/python.exe",
+    "env_override": "IRODORI_HOME"
+  },
+
+  "shared": {
+    "no_ref": true,
+    "seed": 42,
+    "num_steps": 40,
+    "t_schedule_mode": "linear",
+    "cfg_scale_text": 3.0,
+    "cfg_scale_caption": 3.0,
+    "cfg_guidance_mode": "independent",
+    "cfg_min_t": 0.5,
+    "cfg_max_t": 1.0,
+    "model_precision": "fp32",
+    "codec_precision": "fp32",
+    "codec_deterministic_decode": true,
+    "codec_deterministic_encode": true,
+    "num_candidates": 1,
+    "trim_tail": true,
+    "sample_rate": 48000
+  },
+
+  "voices": {
+    "news_female": {
+      "label": "ニュース調 女性",
+      "caption": "落ち着いた女性の声で、ニュースを読み上げるように明瞭に、一定のテンポで話す。",
+      "duration_scale": 0.92,
+      "approved_from": "01_female_news_fast",
+      "reference_wav_sha256": "1F84642CC9DE145F6DB1AE110A9B526A232A171A6F72BAD33FD0F2874C8796BB"
+    },
+    "bright_female": {
+      "label": "明るい 女性（高音）",
+      "caption": "明るく親しみやすい若い女性の、かなり高く澄んだ声で、少し弾んだ調子でやわらかく話す。",
+      "duration_scale": 1.0,
+      "approved_from": "02_female_bright_highB",
+      "reference_wav_sha256": "5FB78566E59DBF4A1C394D96EEE714A589EB415975748FC254D8700B58D05726"
+    },
+    "crisp_female": {
+      "label": "はきはき 女性（高音）",
+      "caption": "はきはきとした女性の、かなり高く明るい声で、テンポよく明快に説明するように話す。",
+      "duration_scale": 1.0,
+      "approved_from": "05_female_crisp_highB",
+      "reference_wav_sha256": "DFAD1C2DAD44D3EB6686EA7F7F6E1587B38B0A1E622029AB6988542E70D8F08C"
+    },
+    "soft_male": {
+      "label": "穏やか 男性",
+      "caption": "穏やかで優しい男性の声で、近い距離感でやわらかく、自然なテンポで話す。",
+      "duration_scale": 0.85,
+      "approved_from": "04_male_soft_fast",
+      "reference_wav_sha256": "C2954033F2602CF55ABC9990E5447B0DBCDDF32C94D29BA56052A47FC9BFAA4D"
+    },
+    "fresh_youth_male": {
+      "label": "爽やか 青年",
+      "caption": "爽やかで快活な青年の声で、明るくハキハキと、軽やかなテンポで話す。",
+      "duration_scale": 0.9,
+      "approved_from": "y1_fresh",
+      "reference_wav_sha256": "314528C1489F1B32249B559EFD7C4E335C6F32D5985F363E596CE9D5A40A1394"
+    },
+    "calm_youth_male": {
+      "label": "知的 青年",
+      "caption": "落ち着いた知的な青年の声で、丁寧に、少し抑えたトーンで淡々と話す。",
+      "duration_scale": 0.9,
+      "approved_from": "y2_calm_smart",
+      "reference_wav_sha256": "827C7203EECB729DD295CEB2BBDDBDB02F2735243AE88EA7FEAF57D4072C7BC9"
+    },
+    "cool_youth_male": {
+      "label": "クール 青年",
+      "caption": "少しクールで低めの青年の声で、感情を抑えて落ち着いた調子で話す。",
+      "duration_scale": 0.9,
+      "approved_from": "y3_cool_low",
+      "reference_wav_sha256": "0BAF2939431E5951056B1FF76001FFBCA400B2C6CF63C4DAAB7F5F0878721F48"
+    }
+  },
+
+  "$verification": [
+    "reference_wav_sha256 is the SHA-256 of the approved take of the fixed",
+    "review line. Re-rendering that exact line with this preset must reproduce",
+    "the same hash; a mismatch means the environment drifted (checkpoint, codec,",
+    "torch version, or device/precision) and the voice is no longer the approved one."
+  ],
+  "$review_line": "こんにちは、1月２０日の朝、11：20、今日の昼御飯は焼きサバ定食です"
+}
