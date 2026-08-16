@@ -23,7 +23,7 @@
     "smoke:relay": "tsx scripts/relay-smoke.ts",
     "audit:release": "node scripts/audit-release.mjs",
     "check": "tsc --noEmit",
-    "test": "tsx --test test/*.test.ts",
+    "test": "node scripts/run-tests.mjs",
     "validate": "npm run build && streamdeck validate dist/com.simeo.codex-deck.sdPlugin",
     "validate:vsd-craft": "npm run build:vsd-craft && node scripts/validate-vsd-craft.mjs",
     "configure:meeting-panels": "node scripts/configure-vsd-craft-meeting-panels.mjs",
