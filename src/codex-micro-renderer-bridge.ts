@@ -214,11 +214,49 @@ const SNAPSHOT_EXPRESSION = `(async () => {
     }
     return undefined;
   };
-  const slots = found.slots.map((slot) => ({
-    ...slot,
-    activityAt: toEpoch(slot.activityAt) ?? toEpoch(slot.updatedAt) ?? toEpoch(slot.lastActivityAt) ??
-      toEpoch(slot.thread?.updatedAt) ?? toEpoch(slot.task?.updatedAt)
-  }));
+  const threadIdentity = (value) => typeof value === 'string'
+    ? value.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)?.[0]?.toLowerCase()
+    : undefined;
+  const sidebarProjectLabel = (threadKey) => {
+    const identity = threadIdentity(threadKey);
+    if (!identity) return undefined;
+    const row = [...document.querySelectorAll('[data-app-action-sidebar-thread-id]')].find((element) =>
+      threadIdentity(element.getAttribute('data-app-action-sidebar-thread-id')) === identity);
+    const group = row?.closest('[data-sidebar-project-kind][aria-label]');
+    return group?.getAttribute('aria-label')?.trim() || undefined;
+  };
+  const projectLabel = (slot) => {
+    const named = [
+      sidebarProjectLabel(slot.threadKey),
+      slot.projectLabel, slot.projectName, slot.workspaceName, slot.repositoryName,
+      slot.project?.name, slot.workspace?.name, slot.repository?.name,
+      slot.task?.projectLabel, slot.task?.projectName, slot.task?.project?.name,
+      slot.thread?.projectLabel, slot.thread?.projectName, slot.thread?.project?.name,
+      slot.threadSummary?.projectLabel, slot.summary?.projectLabel
+    ].find((value) => typeof value === 'string' && value.trim());
+    const path = [
+      slot.cwd, slot.rootPath, slot.workspacePath,
+      slot.project?.path, slot.workspace?.path, slot.workspace?.rootPath,
+      slot.task?.cwd, slot.task?.rootPath, slot.thread?.cwd, slot.thread?.rootPath,
+      slot.threadSummary?.cwd, slot.summary?.cwd
+    ].find((value) => typeof value === 'string' && value.trim());
+    const value = named ?? path;
+    if (typeof value !== 'string') return undefined;
+    return value.trim().split(/[\\/]/).filter(Boolean).at(-1)?.trim().slice(0, 80) || undefined;
+  };
+  const slots = found.slots.map((slot, id) => {
+    const label = projectLabel(slot);
+    return {
+      id: Number.isInteger(slot.id) ? slot.id : id,
+      threadKey: typeof slot.threadKey === 'string' ? slot.threadKey : null,
+      title: typeof slot.title === 'string' ? slot.title.slice(0, 240) : null,
+      ...(label ? { projectLabel: label } : {}),
+      status: typeof slot.status === 'string' ? slot.status : 'off',
+      selected: slot.selected === true,
+      activityAt: toEpoch(slot.activityAt) ?? toEpoch(slot.updatedAt) ?? toEpoch(slot.lastActivityAt) ??
+        toEpoch(slot.thread?.updatedAt) ?? toEpoch(slot.task?.updatedAt)
+    };
+  });
 
   let usage;
   for (const client of queryClients) {

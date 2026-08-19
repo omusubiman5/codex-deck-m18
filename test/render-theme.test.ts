@@ -30,6 +30,13 @@ test("light and dark agent themes remain visually distinct", () => {
   assert.notEqual(light, dark);
 });
 
+test("agent tiles show a project as the primary label and a task as secondary text", () => {
+  const svg = renderAgentSvg(0, "codex-deck-m18", "thinking", false, 0, "dark", "W", "ready", 20, true, "Implement scene switching");
+  assert.match(svg, />codex-deck-m18<\/text>/);
+  assert.match(svg, /data-agent-task-label="true"/);
+  assert.match(svg, />Implement scene switching<\/text>/);
+});
+
 test("agent context ring is bounded and can be hidden globally", () => {
   const visible = renderAgentSvg(0, "Context test", "thinking", false, 0, "dark", "M", "ready", 84, true);
   assert.match(visible, /data-context-used="84"/);

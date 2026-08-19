@@ -41,11 +41,11 @@ const SURFACES: Record<ThemeMode, SurfacePalette> = {
   }
 };
 
-export function renderAgentKey(slot: number, title: string, status: AgentVisualStatus, selected = false, phase = 0, theme: ThemeMode = "light", hostBadge?: string, hostHealth: HostHealthState = "ready", contextUsedPercent?: number, showContextRing = true): string {
-  return toDataUrl(renderAgentSvg(slot, title, status, selected, phase, theme, hostBadge, hostHealth, contextUsedPercent, showContextRing));
+export function renderAgentKey(slot: number, title: string, status: AgentVisualStatus, selected = false, phase = 0, theme: ThemeMode = "light", hostBadge?: string, hostHealth: HostHealthState = "ready", contextUsedPercent?: number, showContextRing = true, taskTitle?: string): string {
+  return toDataUrl(renderAgentSvg(slot, title, status, selected, phase, theme, hostBadge, hostHealth, contextUsedPercent, showContextRing, taskTitle));
 }
 
-export function renderAgentSvg(_slot: number, title: string, status: AgentVisualStatus, selected = false, phase = 0, theme: ThemeMode = "light", hostBadge?: string, hostHealth: HostHealthState = "ready", contextUsedPercent?: number, showContextRing = true): string {
+export function renderAgentSvg(_slot: number, title: string, status: AgentVisualStatus, selected = false, phase = 0, theme: ThemeMode = "light", hostBadge?: string, hostHealth: HostHealthState = "ready", contextUsedPercent?: number, showContextRing = true, taskTitle?: string): string {
   const surface = SURFACES[theme];
   const color = SIGNAL_COLORS[theme][status];
   const [line1, line2] = splitTitle(title);
@@ -55,9 +55,15 @@ export function renderAgentSvg(_slot: number, title: string, status: AgentVisual
   const glowOpacity = Math.min(1, (status === "empty" ? .12 : status === "idle" ? .18 : status === "thinking" ? .50 + pulse * .16 : status === "input" ? .42 + pulse * .12 : .52) + themeBoost);
   const surfaceOpacity = (status === "empty" ? .04 : status === "idle" ? .06 : status === "thinking" ? .30 + pulse * .12 : status === "input" ? .24 + pulse * .08 : .28) + (theme === "dark" && status !== "empty" ? .06 : 0);
   const statusMark = renderAgentStatusMark(status, glowColor, phase, pulse);
-  const titleMarkup = line2
-    ? `<text x="72" y="55" text-anchor="middle" font-size="${fitTitleFont(line1, 16.5)}" font-weight="600" letter-spacing=".12" fill="${surface.title}">${escapeXml(line1)}</text><text x="72" y="75" text-anchor="middle" font-size="${fitTitleFont(line2, 16.5)}" font-weight="600" letter-spacing=".12" fill="${surface.title}">${escapeXml(line2)}</text>`
-    : `<text x="72" y="66" text-anchor="middle" font-size="${fitTitleFont(line1, 18)}" font-weight="600" letter-spacing=".12" fill="${surface.title}">${escapeXml(line1)}</text>`;
+  const taskLine = taskTitle?.trim().slice(0, 26);
+  const titleMarkup = taskLine
+    ? `${line2
+        ? `<text x="72" y="49" text-anchor="middle" font-size="${fitTitleFont(line1, 15.5)}" font-weight="650" letter-spacing=".12" fill="${surface.title}">${escapeXml(line1)}</text><text x="72" y="67" text-anchor="middle" font-size="${fitTitleFont(line2, 15.5)}" font-weight="650" letter-spacing=".12" fill="${surface.title}">${escapeXml(line2)}</text>`
+        : `<text x="72" y="59" text-anchor="middle" font-size="${fitTitleFont(line1, 17.5)}" font-weight="650" letter-spacing=".12" fill="${surface.title}">${escapeXml(line1)}</text>`}
+      <text data-agent-task-label="true" x="72" y="82" text-anchor="middle" font-size="${fitTitleFont(taskLine, 10.5)}" font-weight="500" fill="${surface.title}" fill-opacity=".66">${escapeXml(taskLine)}</text>`
+    : line2
+      ? `<text x="72" y="55" text-anchor="middle" font-size="${fitTitleFont(line1, 16.5)}" font-weight="600" letter-spacing=".12" fill="${surface.title}">${escapeXml(line1)}</text><text x="72" y="75" text-anchor="middle" font-size="${fitTitleFont(line2, 16.5)}" font-weight="600" letter-spacing=".12" fill="${surface.title}">${escapeXml(line2)}</text>`
+      : `<text x="72" y="66" text-anchor="middle" font-size="${fitTitleFont(line1, 18)}" font-weight="600" letter-spacing=".12" fill="${surface.title}">${escapeXml(line1)}</text>`;
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="144" height="144" viewBox="0 0 144 144">
     <defs>

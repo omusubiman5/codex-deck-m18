@@ -1,4 +1,5 @@
 import { OFFICIAL_KEYCAP_IDS, type OfficialKeycapId } from "./keycaps.js";
+import { isSafeProjectLabel } from "./project-label.js";
 import type {
   CodexHost, HostSessionPresence, MicroActionSlot, MicroDirection, MicroSnapshot, ReasoningAdjustment, RoutedAgentSlot
 } from "./types.js";
@@ -105,7 +106,7 @@ export class HostActivityIndex {
       for (const slot of input.snapshot.slots) {
         if (!slot.threadKey) continue;
         const key = `${input.host.hostId}:${threadIdentity(slot.threadKey)}`;
-        const signature = `${slot.status}:${slot.selected}:${slot.title ?? ""}`;
+        const signature = `${slot.status}:${slot.selected}:${slot.title ?? ""}:${slot.projectLabel ?? ""}`;
         const prior = this.activity.get(key);
         const explicit = validTimestamp(slot.activityAt);
         const changed = prior != null && prior.signature !== signature;
@@ -265,6 +266,10 @@ export function parseRelayCommand(value: unknown): RelayCommand | null {
 function isSnapshot(value: unknown): value is MicroSnapshot {
   if (!isRecord(value) || !Array.isArray(value.slots) || value.slots.length !== 6 || !isRecord(value.layout)) return false;
   if (!value.slots.every((slot, index) => isRecord(slot) && slot.id === index && typeof slot.status === "string" &&
+    (slot.threadKey == null || isThreadKey(slot.threadKey)) &&
+    (slot.title == null || (typeof slot.title === "string" && slot.title.length <= 240)) &&
+    typeof slot.selected === "boolean" &&
+    (slot.projectLabel == null || isSafeProjectLabel(slot.projectLabel)) &&
     (slot.contextUsedPercent == null || finitePercent(slot.contextUsedPercent)))) return false;
   if (value.activeThreadKey != null && !isThreadKey(value.activeThreadKey)) return false;
   if (value.activeThreadTitle != null && (typeof value.activeThreadTitle !== "string" || value.activeThreadTitle.length > 240)) return false;
@@ -378,11 +383,13 @@ function mergeMirrors(
     candidate.ownedByHost === true && candidate.contextUsedPercent != null)
     ?? candidates.find((candidate) => candidate.contextUsedPercent != null);
   const titleCandidate = candidates.find((candidate) => normalizedTitle(candidate.title));
+  const projectCandidate = candidates.find((candidate) => isSafeProjectLabel(candidate.projectLabel));
   return {
     ...owner,
     host: routedOwner,
     ownedByHost: sessionOwner ? true : owner.ownedByHost,
     title: normalizedTitle(owner.title) ? owner.title : titleCandidate?.title ?? null,
+    projectLabel: isSafeProjectLabel(owner.projectLabel) ? owner.projectLabel : projectCandidate?.projectLabel,
     status,
     selected: statusCandidates.some((candidate) => candidate.selected),
     contextUsedPercent: sessionOwner?.session.contextUsedPercent ?? contextCandidate?.contextUsedPercent,

@@ -14,6 +14,8 @@ export type MicroAgentSlot = {
   id: number;
   threadKey: string | null;
   title: string | null;
+  /** User-visible project/workspace basename. Absolute paths are never relayed. */
+  projectLabel?: string;
   status: string;
   selected: boolean;
   activityAt?: number;

@@ -16,6 +16,7 @@ import {
   renderRateLimitResetKey, renderUsageLimitKey, renderUsageOverviewKey, type BuiltinIconName
 } from "./render.js";
 import { openCodexThread } from "./codex-open.js";
+import { agentPrimaryLabel } from "./project-label.js";
 import { visualStatusFromMicro } from "./status.js";
 import type {
   CodexHost, HostHealth, MicroActionSlot, MicroDirection, MicroSnapshot, ReasoningAdjustment,
@@ -428,13 +429,15 @@ export class DeckController {
     const unavailableTitle = health.state === "degraded" ? "Signals uncertain"
       : health.state === "offline" ? "Host offline"
         : health.state === "connecting" ? "Connecting" : "Not assigned";
-    const title = agent?.title ?? (agent?.threadKey && health.state === "ready" ? "New chat" : unavailableTitle);
+    const taskTitle = agent?.title ?? (agent?.threadKey && health.state === "ready" ? "New chat" : unavailableTitle);
+    const title = agentPrimaryLabel(agent?.projectLabel, taskTitle);
+    const secondaryTitle = agent?.projectLabel && agent?.title && title !== agent.title ? agent.title : undefined;
     const status = agent ? visualStatusFromMicro(agent.status) : "empty";
     const theme = this.targetSnapshot()?.theme ?? this.localSnapshot?.snapshot.theme ?? "dark";
     const hostBadge = agent && this.relayClient ? (agent.host.platform === "darwin" ? "M" : "W") : undefined;
     await this.setImage(action, renderAgentKey(
       slot, title, status, agent?.selected ?? false, this.animationFrame, theme, hostBadge,
-      health.state, agent?.contextUsedPercent, this.showContextRings));
+      health.state, agent?.contextUsedPercent, this.showContextRings, secondaryTitle));
   }
 
   private async renderAnimatedAgents(): Promise<void> {

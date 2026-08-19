@@ -8,7 +8,7 @@ macOS 13以降で、メーカー標準のVSD Craftを使ってVSD Inside M18か�
 
 - 15個のLCDキーはCodex Deckアクションを表示・実行する。
 - 下部3物理ボタンはVSD Craft標準のシーン切替に使う。
-- `Codex Micro`、`Codex Tools`、M18標準シーンの役割はWindows版と同じ。
+- 必須45操作を15件ずつ収めた3シーンの役割はWindows版と同じ。
 - M18のUSB通信、シーン、LCD転送はVSD Craftへ任せる。
 - Codex Desktopとの接続は上流Codex DeckのmacOS watcherとローカルCDPを使う。
 
@@ -45,9 +45,9 @@ VSD Craft本体、M18ファームウェア、Codex Desktopは変更しません�
 
 Windows版と同じCodex DeckアクションをVSD Craft標準UIから配置します。下部3物理ボタンにはCodexアクションを置かず、各シーンで次のScene Shiftを設定します。
 
-- 左：`Codex Micro`
-- 中央：`Codex Tools`
-- 右：M18標準シーン
+- 左：シーン1（Agent／Navigation／Host／Usage）
+- 中央：シーン2（公式キー前半15件）
+- 右：シーン3（公式キー後半15件）
 
 シーン設定はVSD Craftが管理するため、Windowsの設定ファイルをMacへ直接コピーせず、Mac上の標準UIで作成します。
 
@@ -57,6 +57,6 @@ Windows版と同じCodex DeckアクションをVSD Craft標準UIから配置し�
 2. Agent 1をLCDへ置くと状態画像が表示される。
 3. AgentキーとCodex MicroアクションがmacOS版Codexへ届く。
 4. 下部3ボタンが3シーンを直接切り替える。
-5. M18標準シーンが変更されていない。
+5. 45操作が3面へ重複なく配置されている。
 
 macOS実機とM18を接続した最終確認が終わるまでは、macOS対応を「実機検証済み」とは扱いません。
