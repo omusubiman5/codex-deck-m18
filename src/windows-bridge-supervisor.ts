@@ -25,7 +25,7 @@ export function startWindowsBridgeSupervisor(logger: DeckLogger): void {
       join(process.env.SystemRoot ?? "C:\\Windows", "System32", "WindowsPowerShell", "v1.0", "powershell.exe"),
       [
         "-NoLogo", "-NoProfile", "-ExecutionPolicy", "Bypass", "-WindowStyle", "Hidden",
-        "-File", watcher, "-RecoverExistingSession"
+        "-File", watcher
       ],
       { stdio: "ignore", windowsHide: true }
     );
@@ -37,7 +37,7 @@ export function startWindowsBridgeSupervisor(logger: DeckLogger): void {
         logger.warn(`Codex Deck bridge supervisor exited unexpectedly (code=${String(code)}, signal=${String(signal)}).`);
       }
     });
-    logger.info("Codex Deck bridge supervisor requested.");
+    logger.info("Codex Deck bridge observer requested without automatic recovery permission.");
   } catch (error) {
     logger.warn(`Codex Deck bridge supervisor could not be started: ${String(error)}`);
   }

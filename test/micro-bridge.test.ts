@@ -187,7 +187,7 @@ test("Codex key surfaces always use live Micro rendering instead of packaged art
   assert.match(build, /state\.Image = "static\/imgs\/key"/);
 });
 
-test("VSD Craft starts a packaged Windows bridge supervisor automatically", async () => {
+test("VSD Craft starts a packaged Windows bridge observer without restart permission", async () => {
   const [plugin, supervisor, build, validation] = await Promise.all([
     readFile(new URL("../src/plugin.ts", import.meta.url), "utf8"),
     readFile(new URL("../src/windows-bridge-supervisor.ts", import.meta.url), "utf8"),
@@ -195,7 +195,8 @@ test("VSD Craft starts a packaged Windows bridge supervisor automatically", asyn
     readFile(new URL("../scripts/validate-vsd-craft.mjs", import.meta.url), "utf8")
   ]);
   assert.match(plugin, /startWindowsBridgeSupervisor\(streamDeck\.logger\)/);
-  assert.match(supervisor, /RecoverExistingSession/);
+  assert.doesNotMatch(supervisor, /watcher, "-RecoverExistingSession"/);
+  assert.match(supervisor, /without automatic recovery permission/i);
   assert.doesNotMatch(supervisor, /detached: true/);
   assert.match(supervisor, /windowsHide: true/);
   assert.match(supervisor, /supervisor exited unexpectedly/);
