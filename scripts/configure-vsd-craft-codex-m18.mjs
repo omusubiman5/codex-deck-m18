@@ -2,18 +2,19 @@ import { cp, mkdir, readFile, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { basename, join } from "node:path";
+import { pathToFileURL } from "node:url";
 
 const appData = process.env.APPDATA;
 if (!appData) throw new Error("APPDATA is not available.");
 
 const profileRoot = join(appData, "HotSpot", "StreamDock", "profiles");
-const profileIds = [
+export const profileIds = [
   "958M229P-ODG0-T190-KT30-D18NN43IM5HZ",
   "E20ACZ9G-35Q9-UTQ7-9VN0-38058CP6N18K",
   "2YD4ACZ2-8K19-0184-XYLF-H11W2P0MWH22"
 ];
 
-const scenes = [
+export const scenes = [
   {
     name: "Codex Projects",
     actions: [
@@ -109,33 +110,40 @@ function sceneShift(profileId) {
   };
 }
 
-await mkdir(backupRoot, { recursive: true });
+export async function configureVsdCraftCodexM18() {
+  await mkdir(backupRoot, { recursive: true });
 
-for (let sceneIndex = 0; sceneIndex < scenes.length; sceneIndex += 1) {
-  const profileId = profileIds[sceneIndex];
-  const profileDir = join(profileRoot, `${profileId}.sdProfile`);
-  const manifestPath = join(profileDir, "manifest.json");
-  if (!existsSync(manifestPath)) throw new Error(`Missing VSD Craft profile: ${profileId}`);
+  for (let sceneIndex = 0; sceneIndex < scenes.length; sceneIndex += 1) {
+    const profileId = profileIds[sceneIndex];
+    const profileDir = join(profileRoot, `${profileId}.sdProfile`);
+    const manifestPath = join(profileDir, "manifest.json");
+    if (!existsSync(manifestPath)) throw new Error(`Missing VSD Craft profile: ${profileId}`);
 
-  const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
-  if (manifest.DeviceUUID !== "VSDM18") throw new Error(`${profileId} is not an M18 profile.`);
-  await cp(profileDir, join(backupRoot, basename(profileDir)), { recursive: true });
+    const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+    if (manifest.DeviceUUID !== "VSDM18") throw new Error(`${profileId} is not an M18 profile.`);
+    await cp(profileDir, join(backupRoot, basename(profileDir)), { recursive: true });
 
-  const actions = {};
-  for (let index = 0; index < scenes[sceneIndex].actions.length; index += 1) {
-    const column = index % 5;
-    const row = 2 - Math.floor(index / 5);
-    const [name, uuid] = scenes[sceneIndex].actions[index];
-    actions[`${column},${row}`] = keypadAction(name, uuid);
+    const actions = {};
+    for (let index = 0; index < scenes[sceneIndex].actions.length; index += 1) {
+      const column = index % 5;
+      const row = 2 - Math.floor(index / 5);
+      const [name, uuid] = scenes[sceneIndex].actions[index];
+      actions[`${column},${row}`] = keypadAction(name, uuid);
+    }
+    for (let button = 0; button < 3; button += 1) {
+      actions[`5,${button}`] = sceneShift(profileIds[button]);
+    }
+
+    manifest.Name = scenes[sceneIndex].name;
+    manifest.Actions = actions;
+    manifest.Pages = { Current: `${profileId}.sdProfile`, Pages: [`${profileId}.sdProfile`] };
+    await writeFile(manifestPath, `${JSON.stringify(manifest, null, 4)}\n`, "utf8");
+    console.log(`${scenes[sceneIndex].name}: ${profileDir}`);
   }
-  for (let button = 0; button < 3; button += 1) {
-    actions[`5,${button}`] = sceneShift(profileIds[button]);
-  }
 
-  manifest.Name = scenes[sceneIndex].name;
-  manifest.Actions = actions;
-  await writeFile(manifestPath, `${JSON.stringify(manifest, null, 4)}\n`, "utf8");
-  console.log(`${scenes[sceneIndex].name}: ${profileDir}`);
+  console.log(`Backup: ${backupRoot}`);
 }
 
-console.log(`Backup: ${backupRoot}`);
+if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
+  await configureVsdCraftCodexM18();
+}
