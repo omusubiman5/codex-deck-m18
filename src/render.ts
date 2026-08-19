@@ -3,14 +3,23 @@ import { clampPercent, usageLabel } from "./usage.js";
 
 export type BuiltinIconName = "back" | "forward" | "sidebar" | "home" | "navigation";
 
+export const CODEX_MICRO_COLORS = {
+  ready: "#1D9528",
+  active: "#732BE1",
+  selected: "#0C5AFB",
+  approval: "#FF880A",
+  error: "#E42D2D",
+  off: "#9CA3AF"
+} as const;
+
 export const SIGNAL_COLORS: Record<ThemeMode, Record<AgentVisualStatus, string>> = {
   light: {
-    empty: "#000000", idle: "#FFFFFF", thinking: "#304FFE",
-    complete: "#00FF4C", input: "#FF6D00", error: "#FF0033"
+    empty: CODEX_MICRO_COLORS.off, idle: CODEX_MICRO_COLORS.ready, thinking: CODEX_MICRO_COLORS.active,
+    complete: CODEX_MICRO_COLORS.ready, input: CODEX_MICRO_COLORS.approval, error: CODEX_MICRO_COLORS.error
   },
   dark: {
-    empty: "#000000", idle: "#FFFFFF", thinking: "#304FFE",
-    complete: "#00FF4C", input: "#FF6D00", error: "#FF0033"
+    empty: CODEX_MICRO_COLORS.off, idle: CODEX_MICRO_COLORS.ready, thinking: CODEX_MICRO_COLORS.active,
+    complete: CODEX_MICRO_COLORS.ready, input: CODEX_MICRO_COLORS.approval, error: CODEX_MICRO_COLORS.error
   }
 };
 
@@ -32,12 +41,12 @@ const SURFACES: Record<ThemeMode, SurfacePalette> = {
   light: {
     outer: "#C7CDD1", keyTop: "#FFFFFF", keyMiddle: "#F0F3F4", keyBottom: "#D6DBDE",
     border: "#FFFFFF", innerBorder: "#C4C9CD", frostTop: "#FFFFFF", frostEnd: "#AAB3BA",
-    title: "#171C20", sheen: "#FFFFFF", selected: "#42E2C1"
+    title: "#171C20", sheen: "#FFFFFF", selected: CODEX_MICRO_COLORS.selected
   },
   dark: {
     outer: "#45484B", keyTop: "#343638", keyMiddle: "#2A2C2E", keyBottom: "#222426",
     border: "#55585B", innerBorder: "#3D4043", frostTop: "#FFFFFF", frostEnd: "#1C1E20",
-    title: "#F2F2EF", sheen: "#FFFFFF", selected: "#4CE0C2"
+    title: "#F2F2EF", sheen: "#FFFFFF", selected: CODEX_MICRO_COLORS.selected
   }
 };
 

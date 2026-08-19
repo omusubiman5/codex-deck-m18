@@ -1,15 +1,33 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
-import { renderAgentSvg, renderBuiltinKeycap, renderFallbackKeycap, renderHostTargetKey, renderImportedKeycap, SIGNAL_COLORS } from "../src/render.js";
+import { CODEX_MICRO_COLORS, renderAgentSvg, renderBuiltinKeycap, renderFallbackKeycap, renderHostTargetKey, renderImportedKeycap, SIGNAL_COLORS } from "../src/render.js";
 
-test("agent status colors match Codex Micro exactly", () => {
+test("agent status colors match the instructed Codex Micro semantics", () => {
   const expected = {
-    empty: "#000000", idle: "#FFFFFF", thinking: "#304FFE",
-    complete: "#00FF4C", input: "#FF6D00", error: "#FF0033"
+    empty: "#9CA3AF", idle: "#1D9528", thinking: "#732BE1",
+    complete: "#1D9528", input: "#FF880A", error: "#E42D2D"
   };
   assert.deepEqual(SIGNAL_COLORS.light, expected);
   assert.deepEqual(SIGNAL_COLORS.dark, expected);
+  assert.equal(CODEX_MICRO_COLORS.selected, "#0C5AFB");
+});
+
+test("working, completed, selected, approval, error, and off are visibly distinct", () => {
+  const working = renderAgentSvg(0, "Build", "thinking", false, 0, "dark");
+  const completed = renderAgentSvg(0, "Build", "complete", false, 0, "dark");
+  const selected = renderAgentSvg(0, "Build", "idle", true, 0, "dark");
+  const approval = renderAgentSvg(0, "Build", "input", false, 0, "dark");
+  const error = renderAgentSvg(0, "Build", "error", false, 0, "dark");
+  const off = renderAgentSvg(0, "Build", "empty", false, 0, "dark");
+
+  assert.match(working, new RegExp(CODEX_MICRO_COLORS.active, "i"));
+  assert.match(completed, new RegExp(CODEX_MICRO_COLORS.ready, "i"));
+  assert.match(selected, new RegExp(CODEX_MICRO_COLORS.selected, "i"));
+  assert.match(approval, new RegExp(CODEX_MICRO_COLORS.approval, "i"));
+  assert.match(error, new RegExp(CODEX_MICRO_COLORS.error, "i"));
+  assert.match(off, new RegExp(CODEX_MICRO_COLORS.off, "i"));
+  assert.notEqual(working, completed);
 });
 
 test("dark agent tiles use Codex-like charcoal surfaces without pure black", () => {
