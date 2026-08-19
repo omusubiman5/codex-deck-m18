@@ -8,6 +8,39 @@ test("iPhone bundle declares the executable required for device installation", a
   assert.match(plist, /<key>CFBundlePackageType<\/key>\s*<string>APPL<\/string>/);
 });
 
+test("iPhone launches the instructed four-screen Codex Micro interface", async () => {
+  const [app, reference, theme, catalog] = await Promise.all([
+    readFile(new URL("../ios/CodexDeckMobile/CodexDeckMobileApp.swift", import.meta.url), "utf8"),
+    readFile(new URL("../ios/CodexDeckMobile/Views/CodexMicroReferenceView.swift", import.meta.url), "utf8"),
+    readFile(new URL("../ios/CodexDeckMobile/Design/CodexTheme.swift", import.meta.url), "utf8"),
+    readFile(new URL("../ios/CodexDeckMobile/Models/KeycapCatalog.swift", import.meta.url), "utf8")
+  ]);
+
+  assert.match(app, /CodexMicroReferenceView\(\)/);
+  assert.match(reference, /TabView\(selection:/);
+  for (const tab of ["Control", "Palette", "Usage", "Hosts"]) {
+    assert.match(reference, new RegExp(`tabItem \\{ Label\\("${tab}"`));
+  }
+  assert.match(reference, /private struct CodexMicroControlScreen/);
+  assert.match(reference, /private struct CodexMicroPaletteScreen/);
+  assert.match(reference, /private struct CodexMicroUsageScreen/);
+  assert.match(reference, /private struct CodexMicroHostsScreen/);
+  assert.match(reference, /private let columns = Array\(repeating: GridItem\(\.flexible\(\), spacing: 7\), count: 3\)/);
+  assert.match(reference, /GridItem\(\.flexible\(\), spacing: 5\), count: 6/);
+  assert.match(reference, /count: 5/);
+  assert.match(reference, /KeycapCatalog\.all\.filter/);
+  assert.match(reference, /minimumDuration: 1\.2/);
+  assert.match(reference, /await store\.resetRateLimit\(\)/);
+  for (const status of ["準備完了", "動作中", "選択中", "承認待ち", "エラー", "停止中"]) {
+    assert.match(reference, new RegExp(status));
+  }
+  assert.match(reference, /font\(\.system\(size: 14, weight: \.bold\)\)/);
+  assert.match(reference, /preferredColorScheme\(\.light\)/);
+  assert.match(theme, /static let purple/);
+  assert.match(theme, /\["working", "thinking"\][\s\S]*return purple/);
+  assert.equal([...catalog.matchAll(/\.init\(id: "/g)].length, 30);
+});
+
 test("iPhone key library stays in parity with every relay keycap", async () => {
   const [typescript, swift] = await Promise.all([
     readFile(new URL("../src/keycaps.ts", import.meta.url), "utf8"),

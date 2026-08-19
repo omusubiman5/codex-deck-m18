@@ -15,7 +15,7 @@ import {
 } from "../src/codex-relay-server.js";
 import {
   HostActivityIndex, RELAY_PROTOCOL_VERSION, normalizeHostSnapshotAtReceipt,
-  parseRelayCommand, type HostSnapshot
+  parseRelayCommand, parseRelayServerMessage, type HostSnapshot
 } from "../src/relay-protocol.js";
 import type { CodexHost, MicroSnapshot } from "../src/types.js";
 
@@ -45,6 +45,20 @@ test("relay refuses wildcard exposure and short authentication tokens", () => {
   assert.equal(isAllowedRelayHost("100.64.0.42"), true);
   assert.equal(isAllowedRelayHost("example.tailnet.ts.net"), true);
   assert.equal(isAllowedRelayHost("8.8.8.8"), false);
+});
+
+test("relay accepts project basenames and rejects absolute project paths", () => {
+  const safe = structuredClone(snapshot);
+  safe.slots[0]!.projectLabel = "codex-deck-m18";
+  assert.notEqual(parseRelayServerMessage({
+    type: "snapshot", protocol: RELAY_PROTOCOL_VERSION, host, observedAt: 1_000, snapshot: safe
+  }), null);
+
+  const unsafe = structuredClone(snapshot);
+  unsafe.slots[0]!.projectLabel = "C:\\Projects\\codex-deck-m18";
+  assert.equal(parseRelayServerMessage({
+    type: "snapshot", protocol: RELAY_PROTOCOL_VERSION, host, observedAt: 1_000, snapshot: unsafe
+  }), null);
 });
 
 test("nearby relay accepts only pinned TLS on a private address and never advertises its token", async () => {

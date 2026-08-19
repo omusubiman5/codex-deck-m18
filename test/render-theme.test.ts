@@ -1,15 +1,33 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
-import { renderAgentSvg, renderBuiltinKeycap, renderFallbackKeycap, renderHostTargetKey, renderImportedKeycap, SIGNAL_COLORS } from "../src/render.js";
+import { CODEX_MICRO_COLORS, renderAgentSvg, renderBuiltinKeycap, renderFallbackKeycap, renderHostTargetKey, renderImportedKeycap, SIGNAL_COLORS } from "../src/render.js";
 
-test("agent status colors match Codex Micro exactly", () => {
+test("agent status colors match the instructed Codex Micro semantics", () => {
   const expected = {
-    empty: "#000000", idle: "#FFFFFF", thinking: "#304FFE",
-    complete: "#00FF4C", input: "#FF6D00", error: "#FF0033"
+    empty: "#9CA3AF", idle: "#1D9528", thinking: "#732BE1",
+    complete: "#1D9528", input: "#FF880A", error: "#E42D2D"
   };
   assert.deepEqual(SIGNAL_COLORS.light, expected);
   assert.deepEqual(SIGNAL_COLORS.dark, expected);
+  assert.equal(CODEX_MICRO_COLORS.selected, "#0C5AFB");
+});
+
+test("working, completed, selected, approval, error, and off are visibly distinct", () => {
+  const working = renderAgentSvg(0, "Build", "thinking", false, 0, "dark");
+  const completed = renderAgentSvg(0, "Build", "complete", false, 0, "dark");
+  const selected = renderAgentSvg(0, "Build", "idle", true, 0, "dark");
+  const approval = renderAgentSvg(0, "Build", "input", false, 0, "dark");
+  const error = renderAgentSvg(0, "Build", "error", false, 0, "dark");
+  const off = renderAgentSvg(0, "Build", "empty", false, 0, "dark");
+
+  assert.match(working, new RegExp(CODEX_MICRO_COLORS.active, "i"));
+  assert.match(completed, new RegExp(CODEX_MICRO_COLORS.ready, "i"));
+  assert.match(selected, new RegExp(CODEX_MICRO_COLORS.selected, "i"));
+  assert.match(approval, new RegExp(CODEX_MICRO_COLORS.approval, "i"));
+  assert.match(error, new RegExp(CODEX_MICRO_COLORS.error, "i"));
+  assert.match(off, new RegExp(CODEX_MICRO_COLORS.off, "i"));
+  assert.notEqual(working, completed);
 });
 
 test("dark agent tiles use Codex-like charcoal surfaces without pure black", () => {
@@ -28,6 +46,13 @@ test("light and dark agent themes remain visually distinct", () => {
   assert.match(light, /data-theme="light"/);
   assert.match(light, /#FFFFFF/);
   assert.notEqual(light, dark);
+});
+
+test("agent tiles show a project as the primary label and a task as secondary text", () => {
+  const svg = renderAgentSvg(0, "codex-deck-m18", "thinking", false, 0, "dark", "W", "ready", 20, true, "Implement scene switching");
+  assert.match(svg, />codex-deck-m18<\/text>/);
+  assert.match(svg, /data-agent-task-label="true"/);
+  assert.match(svg, />Implement scene switching<\/text>/);
 });
 
 test("agent context ring is bounded and can be hidden globally", () => {

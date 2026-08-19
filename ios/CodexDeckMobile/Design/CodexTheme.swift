@@ -20,20 +20,23 @@ enum CodexTheme {
   static let control = Color(red: 0.075, green: 0.085, blue: 0.10)
   static let green = Color(red: 0.18, green: 0.83, blue: 0.44)
   static let blue = Color(red: 0.13, green: 0.53, blue: 0.98)
-  static let selection = Color(red: 0.26, green: 0.89, blue: 0.76)
+  static let purple = Color(red: 0.45, green: 0.17, blue: 0.88)
+  static let selection = blue
   static let orange = Color(red: 1.0, green: 0.61, blue: 0.13)
   static let red = Color(red: 1.0, green: 0.27, blue: 0.36)
+  static let unavailable = Color(red: 0.61, green: 0.64, blue: 0.68)
 
   private static func adaptive(light: UIColor, dark: UIColor) -> Color {
     Color(uiColor: UIColor { traits in traits.userInterfaceStyle == .dark ? dark : light })
   }
 
   static func statusColor(_ status: String) -> Color {
-    if ["working", "thinking"].contains(status) { return blue }
+    if ["working", "thinking"].contains(status) { return purple }
     if ["approval", "awaiting-approval", "awaiting-response"].contains(status) { return orange }
     if ["unread", "complete", "completed", "done"].contains(status) { return green }
     if status == "error" { return red }
-    return secondary.opacity(0.55)
+    if ["off", "empty", "unavailable"].contains(status) { return unavailable }
+    return green
   }
 }
 

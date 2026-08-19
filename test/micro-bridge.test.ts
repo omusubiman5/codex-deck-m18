@@ -49,6 +49,14 @@ test("renderer bridge uses native Micro events and discovers hashed modules at r
   assert.doesNotMatch(source, /D90_rd6W|SFcKxWqG|DJFcGyy5/);
 });
 
+test("renderer snapshot resolves project groups without relaying native slot objects", async () => {
+  const source = await readFile(new URL("../src/codex-micro-renderer-bridge.ts", import.meta.url), "utf8");
+  assert.match(source, /data-sidebar-project-kind/);
+  assert.match(source, /sidebarProjectLabel\(slot\.threadKey\)/);
+  assert.match(source, /projectLabel: label/);
+  assert.doesNotMatch(source, /const slots = found\.slots\.map\(\(slot[^)]*\) => \(\{\s*\.\.\.slot/);
+});
+
 test("renderer bridge prefers the main index document over macOS avatar surfaces", () => {
   const target = selectCodexMainTarget([
     { type: "page", url: "app://-/index.html?initialRoute=%2Favatar-overlay", webSocketDebuggerUrl: "ws://route" },
@@ -128,11 +136,13 @@ test("environment buttons use Codex Micro's native environment action command sl
   assert.match(source, /commandRunner\(\$\{JSON\.stringify\(command\)\}, 'codex_micro_hid'\)/);
 });
 
-test("M18 bottom buttons dispatch environment actions without replacing the LCD layout", async () => {
+test("M18 bottom buttons select three scenes while preserving press ownership", async () => {
   const source = await readFile(new URL("../src/m18.ts", import.meta.url), "utf8");
-  assert.match(source, /environmentAction\(1\), environmentAction\(2\), environmentAction\(3\)/);
-  assert.match(source, /agent\(0\), agent\(1\), agent\(2\), agent\(3\), agent\(4\), agent\(5\)/);
-  assert.doesNotMatch(source, /selectEnvironment|activeEnvironment|VSD Craft/);
+  assert.match(source, /sceneSelectors/);
+  assert.match(source, /selectScene\(scene\)/);
+  assert.match(source, /pressedBindings/);
+  assert.match(source, /M18_SCENES/);
+  assert.doesNotMatch(source, /environmentAction\(1\)/);
 });
 
 test("manifest exposes both dedicated reasoning adjustment buttons", async () => {
@@ -177,7 +187,7 @@ test("Codex key surfaces always use live Micro rendering instead of packaged art
   assert.match(build, /state\.Image = "static\/imgs\/key"/);
 });
 
-test("VSD Craft starts a packaged Windows bridge supervisor automatically", async () => {
+test("VSD Craft starts a packaged Windows bridge observer without restart permission", async () => {
   const [plugin, supervisor, build, validation] = await Promise.all([
     readFile(new URL("../src/plugin.ts", import.meta.url), "utf8"),
     readFile(new URL("../src/windows-bridge-supervisor.ts", import.meta.url), "utf8"),
@@ -185,7 +195,8 @@ test("VSD Craft starts a packaged Windows bridge supervisor automatically", asyn
     readFile(new URL("../scripts/validate-vsd-craft.mjs", import.meta.url), "utf8")
   ]);
   assert.match(plugin, /startWindowsBridgeSupervisor\(streamDeck\.logger\)/);
-  assert.match(supervisor, /RecoverExistingSession/);
+  assert.doesNotMatch(supervisor, /watcher, "-RecoverExistingSession"/);
+  assert.match(supervisor, /without automatic recovery permission/i);
   assert.doesNotMatch(supervisor, /detached: true/);
   assert.match(supervisor, /windowsHide: true/);
   assert.match(supervisor, /supervisor exited unexpectedly/);

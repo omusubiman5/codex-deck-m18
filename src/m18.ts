@@ -1,11 +1,13 @@
 import { appendFileSync } from "node:fs";
 import { join } from "node:path";
-import { DeckController, type FixedIconSource } from "./controller.js";
+import { DeckController } from "./controller.js";
 import { codexDeckStateRoot } from "./codex-deck-paths.js";
 import type { DeckRuntime, DeckSurfaceAction } from "./deck-runtime.js";
+import { createM18Binding } from "./m18-action-bindings.js";
 import type { Binding } from "./m18-bindings.js";
 import { M18AdapterClient } from "./m18-adapter-client.js";
-import type { MicroActionSlot, MicroDirection } from "./types.js";
+import { M18_SCENES } from "./m18-layout.js";
+import { M18SceneController } from "./m18-scene-controller.js";
 
 const logger = {
   info: (message: string) => console.log(`[info] ${message}`),
@@ -18,62 +20,49 @@ const runtime: DeckRuntime = {
   getGlobalSettings: async <T>() => ({ showContextRings: true }) as T
 };
 
-let bindings: Binding[] = [];
+let sceneController: M18SceneController | undefined;
+const pressedBindings = new Map<number, Binding>();
+const sceneSelectors: Binding[] = [0, 1, 2].map((scene) => ({
+  down: async () => sceneController?.selectScene(scene)
+}));
 const eventLog = join(codexDeckStateRoot(), "m18-events.log");
 const adapter = new M18AdapterClient(async (event) => {
   logger.info(`M18 ${event.type} key=${event.key}.`);
   appendFileSync(eventLog, `${new Date().toISOString()} ${event.type} key=${event.key}\n`, "utf8");
-  const binding = bindings[event.key];
+  const binding = event.type === "key_down"
+    ? (event.key < 15 ? sceneController?.bindingForLcd(event.key) : sceneSelectors[event.key - 15])
+    : pressedBindings.get(event.key);
   if (!binding) return;
-  if (event.type === "key_down") await binding.down();
-  else await binding.up?.();
+  if (event.type === "key_down") {
+    if (pressedBindings.has(event.key)) return;
+    pressedBindings.set(event.key, binding);
+    await binding.down();
+  } else {
+    pressedBindings.delete(event.key);
+    await binding.up?.();
+  }
 }, (message) => logger.info(`adapter: ${message}`));
 
 const ready = await adapter.start();
 logger.info(`Connected to ${ready.name} (${hex(ready.vid)}:${hex(ready.pid)}).`);
 
 const controller = new DeckController(runtime);
-const actions = Array.from({ length: 18 }, (_, key): DeckSurfaceAction => ({
-  id: `m18-${key}`,
-  setImage: key < 15 ? (image) => adapter.setImage(key, image) : async () => {},
+const lcdActions = Array.from({ length: 15 }, (_, key): DeckSurfaceAction => ({
+  id: `m18-lcd-${key}`,
+  setImage: (image) => adapter.setImage(key, image),
   setTitle: async () => {}
 }));
 
-const agent = (slot: number): Binding => ({
-  register: (action) => controller.registerAgent(slot, action),
-  down: () => controller.sendAgent(slot, 1),
-  up: () => controller.sendAgent(slot, 0)
-});
-const micro = (slot: MicroActionSlot): Binding => ({
-  register: (action) => controller.registerMicroAction(slot, action),
-  down: () => controller.sendMicroAction(slot, 1),
-  up: () => controller.sendMicroAction(slot, 0)
-});
-const joystick = (direction: MicroDirection, icon?: FixedIconSource): Binding => ({
-  register: icon ? (action) => controller.registerFixedAction(`joystick-${direction}`, action, icon) : undefined,
-  down: () => controller.sendJoystick(direction, 1),
-  up: () => controller.sendJoystick(direction, 0)
-});
-const environmentAction = (slot: 1 | 2 | 3): Binding => ({
-  down: () => controller.runEnvironmentAction(slot)
-});
-
-bindings = [
-  agent(0), agent(1), agent(2), agent(3), agent(4), agent(5),
-  micro("ACT06"), micro("ACT07"), micro("ACT08"), micro("ACT09"), micro("ACT10_ACT11"), micro("ACT12"),
-  joystick("up", { kind: "local", keycapId: "BRCH" }),
-  joystick("left", { kind: "builtin", name: "back" }),
-  joystick("right", { kind: "builtin", name: "forward" }),
-  environmentAction(1), environmentAction(2), environmentAction(3)
-];
-
-for (const [key, binding] of bindings.entries()) binding.register?.(actions[key]!);
+const scenes = M18_SCENES.map((scene) => scene.map((spec) => createM18Binding(controller, spec)));
+sceneController = new M18SceneController(scenes, lcdActions);
+sceneController.mount();
 await controller.start();
 
 let stopping = false;
 const stop = async (): Promise<void> => {
   if (stopping) return;
   stopping = true;
+  sceneController?.unmount();
   controller.stop();
   await adapter.stop();
 };

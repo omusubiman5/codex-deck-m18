@@ -30,19 +30,28 @@ test("runtime override targets the main renderer instead of macOS avatar surface
 });
 
 test("startup monitoring survives Codex updates without duplicate watchers", async () => {
-  const [watcher, launcher, build] = await Promise.all([
+  const [watcher, launcher, build, supervisor] = await Promise.all([
     readFile(new URL("../launcher/Watch-CodexDeck.ps1", import.meta.url), "utf8"),
     readFile(new URL("../launcher/Start-CodexDeck.ps1", import.meta.url), "utf8"),
-    readFile(new URL("../scripts/build-launcher.mjs", import.meta.url), "utf8")
+    readFile(new URL("../scripts/build-launcher.mjs", import.meta.url), "utf8"),
+    readFile(new URL("../src/windows-bridge-supervisor.ts", import.meta.url), "utf8")
   ]);
 
   assert.match(watcher, /Local\\CodexDeckBridgeWatcher/);
   assert.match(watcher, /Get-AppxPackage -Name 'OpenAI\.Codex'/);
   assert.match(watcher, /Test-RecoveryAllowed/);
   assert.match(watcher, /rapid main-process replacement recovers/);
-  assert.match(watcher, /current session was left untouched/i);
+  assert.match(watcher, /watcher-recovery\.json/);
+  assert.match(watcher, /recovery budget exhausted/i);
+  assert.match(watcher, /unsafe main-process count/i);
+  assert.match(watcher, /invalid; automatic recovery remains blocked/i);
+  assert.match(watcher, /\[DateTimeOffset\]::MaxValue/);
+  assert.match(watcher, /Save-RecoveryAttempt \$generation[\s\S]*Invoke-CodexDeckLauncher -ForceRestart/);
   assert.match(watcher, /Clear-StalePortFile/);
   assert.equal(watcher.match(/Invoke-CodexDeckLauncher -ForceRestart/g)?.length, 1);
+
+  assert.doesNotMatch(supervisor, /watcher, "-RecoverExistingSession"/);
+  assert.match(supervisor, /without automatic recovery permission/i);
 
   assert.match(launcher, /Watch-CodexDeck\.ps1/);
   assert.match(launcher, /-RecoverExistingSession/);
@@ -69,7 +78,7 @@ test("watcher recovery decision self-test passes in PowerShell", async (context)
   const { stdout } = await execFileAsync("powershell.exe", [
     "-NoLogo", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", watcherPath, "-SelfTest"
   ]);
-  assert.match(stdout, /self-test passed \(9 cases\)/i);
+  assert.match(stdout, /self-test passed \(14 cases\)/i);
 });
 
 test("launcher supports the current shared-chunk native detection path", () => {

@@ -13,7 +13,7 @@ struct CodexDeckMobileApp: App {
 
   var body: some Scene {
     WindowGroup {
-      DashboardView()
+      CodexMicroReferenceView()
         .environment(store)
         .environment(discovery)
         .task {

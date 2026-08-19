@@ -2,6 +2,7 @@ import type { DeckSurfaceAction } from "./deck-runtime.js";
 
 export type Binding = {
   register?(action: DeckSurfaceAction): void;
+  unregister?(action: DeckSurfaceAction): void;
   down(): Promise<void>;
   up?(): Promise<void>;
 };
