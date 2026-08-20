@@ -87,7 +87,7 @@ function Set-StartupShortcut {
   $shell = New-Object -ComObject WScript.Shell
   $shortcut = $shell.CreateShortcut($shortcutPath)
   $shortcut.TargetPath = (Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe')
-  $shortcut.Arguments = "-NoLogo -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$watcherPath`" -RecoverExistingSession"
+  $shortcut.Arguments = "-NoLogo -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$watcherPath`""
   $shortcut.WorkingDirectory = $launcherRoot
   $shortcut.Description = 'Keep the Codex Deck bridge available while Codex is running'
   $shortcut.IconLocation = "$env:SystemRoot\System32\shell32.dll,44"
@@ -169,14 +169,19 @@ if ($DryRun) {
   Write-Host "Executable: $($codex.Executable)"
   Write-Host "Node: $(& $node.Source --version)"
   if ($existingPort) { Write-Host "Reusable debug port: $existingPort" }
-  elseif ($processes.Count -gt 0) { Write-Host 'Codex is running without a reusable debug bridge; a restart is required.' }
+  elseif ($processes.Count -gt 0) { Write-Host 'Codex is running without a reusable debug bridge and will be left untouched.' }
   else { Write-Host 'Codex is not running; the launcher will start it.' }
   exit 0
 }
 
 $port = $existingPort
-if ($ForceRestart -or -not $port) {
+if ($processes.Count -gt 0 -and -not $existingPort -and -not $ForceRestart) {
+  throw 'Codex is already running without a reusable debug bridge and was left untouched. Save all work, then run again with -ForceRestart only if you explicitly want to restart every Codex process.'
+}
+
+if ($ForceRestart) {
   if ($processes.Count -gt 0) {
+  Write-Warning "Explicit restart requested. This will close all $($processes.Count) Codex process(es), including other open tasks and unsent composer text."
   Write-Host "Closing $($processes.Count) Codex process(es)..."
   foreach ($process in ($processes | Sort-Object ParentProcessId -Descending)) {
     Stop-Process -Id $process.ProcessId -Force -ErrorAction SilentlyContinue
@@ -187,6 +192,10 @@ if ($ForceRestart -or -not $port) {
   if ($remaining.Count -gt 0) { throw 'Some Codex background processes could not be closed.' }
   }
 
+  $port = $null
+}
+
+if (-not $port) {
   $listener = [Net.Sockets.TcpListener]::new([Net.IPAddress]::Loopback, 0)
   $listener.Start()
   $port = ([Net.IPEndPoint]$listener.LocalEndpoint).Port

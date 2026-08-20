@@ -46,3 +46,10 @@ test("release checksums use portable LF line endings on Windows", async () => {
   assert.match(source, /WriteAllText/);
   assert.doesNotMatch(source, /WriteAllLines/);
 });
+
+test("release preparation includes both standalone VSD Craft installers", async () => {
+  const source = await text("scripts/prepare-release.ps1");
+  assert.match(source, /npm run package:vsd-craft-installers/);
+  assert.match(source, /codex-deck-vsd-craft-windows-v\$version\.zip/);
+  assert.match(source, /codex-deck-vsd-craft-macos-v\$version\.zip/);
+});

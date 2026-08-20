@@ -12,7 +12,7 @@ VSD Inside M18を、Windows版またはmacOS版Codex Desktopの**Codex Micro操�
 上流の[Codex Deck](https://github.com/dazer1234/codex-stream-deck)が持つCodex Micro接続・状態取得・描画・イベント送信機能は、どちらの方式でも維持しています。推奨構成では、M18のUSB通信、LCD転送、シーン管理をVSD Craftへ任せます。Linuxは対象外です。
 
 > [!IMPORTANT]
-> OpenAI、Codex Deck、M18メーカーによる公式製品ではありません。Codex Desktopの非公開内部インターフェースを利用するため、Codexの更新後に追従修正が必要になる可能性があります。動作確認済みのCodex Desktopは 26.810.7004.0、VSD Craftは 3.10.188.226 です（[調査記録](docs/vsd-craft/原因調査.md)）。
+> OpenAI、Codex Deck、M18メーカーによる公式製品ではありません。Codex Desktopの非公開内部インターフェースを利用するため、Codexの更新後に追従修正が必要になる可能性があります。現在の互換性確認対象はCodex Desktop 26.814.5167.0、VSD Craft 3.10.188.226です。live再試験は未完了であり、動作確認済みとは扱いません（[調査記録](docs/vsd-craft/原因調査.md)、[テスト結果](docs/codex-micro-m18/テスト結果V1.md)）。
 
 ---
 
@@ -36,26 +36,22 @@ Codex Deckは、物理デバイスからCodex Desktopの**ネイティブなCode
 - **ホスト状態表示**：接続劣化・オフラインとlast-known状態を表示
 - **iPhone companion**：SwiftUIアプリからAgent、利用量、Micro操作を利用
 
-### Codex Deck機能とM18既定面の関係
+### Codex Deck機能とM18 3面の関係
 
-Codex Deckの機能はコードから削除していません。ただしM18の18ボタンには全追加機能を同時配置できないため、既定面はCodex Micro本体の操作を優先しています。
+M18の15 LCDキーを3面で使い、必須45操作をすべて収容します。
 
-| Codex Deck機能 | コア実装 | M18既定ボタン |
+| Codex Deck機能 | コア実装 | M18 3面 |
 |---|---:|---:|
 | Agent 1–6とライブ状態 | 維持 | あり |
-| `ACT06`～`ACT12` | 維持 | あり |
-| Joystick上下左右 | 維持 | 上・左・右のみ |
-| Encoder押下／Reasoning増減 | 維持 | なし |
-| Codex環境アクション1～3 | 維持 | フルOSS構成のみ（下段3ボタン） |
-| 公式Keycap単独コマンド | 維持 | なし |
-| Usage Limit／Usage Overview | 維持 | なし |
-| Rate Limit Reset | 維持 | なし |
-| New Task | 維持 | なし |
-| Windows／Mac切替キー | 維持 | なし |
+| Joystick上下左右 | 維持 | あり |
+| Encoder押下／Reasoning増減 | 維持 | あり |
+| 公式Keycap 30件 | 維持 | あり |
+| Usage Limit／Usage Overview | 維持 | あり |
+| Rate Limit Reset | 維持 | あり |
+| New Task | 維持 | あり（公式`NEW`） |
+| Windows／Mac切替キー | 維持 | あり |
 | Stream Deckプラグイン | 維持 | M18とは別経路 |
 | iPhone companion | 維持 | M18とは別経路 |
-
-ここで「なし」は機能削除ではなく、現在のM18固定レイアウトに物理キーを割り当てていないという意味です。
 
 ## M18版の特徴
 
@@ -81,31 +77,19 @@ VSD Craft運用時のUSB通信はVSD Craftが行います。上記のUSB IDに�
 
 ## キー割当
 
-LCD 15キーの割当は両方式で共通です。
+必須操作45個を、LCD 15キー×3シーンへ重複なく配置します。
 
-| M18入力 | Codex Micro機能 | VSD Craft上のキー名 |
-|---|---|---|
-| LCD 1–6 | Agent 1–6 | Agent 1–6 |
-| LCD 7 | `ACT06`（既定：Fast） | FAST |
-| LCD 8 | `ACT07`（既定：Approve） | APPR |
-| LCD 9 | `ACT08`（既定：Reject） | REJ |
-| LCD 10 | `ACT09`（既定：Fork） | SPLIT |
-| LCD 11 | `ACT10/11`（既定：Dictation） | MIC |
-| LCD 12 | `ACT12`（既定：Send） | CODEX |
-| LCD 13 | Plan（Joystick Up） | 上 |
-| LCD 14 | Back（Joystick Left） | 左 |
-| LCD 15 | Forward（Joystick Right） | 右 |
+| 面 | LCD 15キーの内容 |
+|---|---|
+| シーン1 | Agent 1～6、Joystick上・下・左・右、Reasoningエンコーダ押下、Windows／Macホスト切替＋health、Usage Limit、Usage Overview、Rate Limit Reset |
+| シーン2 | 公式キー前半：FAST、APPR、REJ、SPLIT、MIC、CODEX、BUG、OAI、TERM、DWN、DEL、NEW、NAV、MAGIC、DIFF |
+| シーン3 | 公式キー後半：PLAY、GIT、BRCH、MRG、PR、PAINT、LAB、PARTY、TIME、MIND+、MIND-、SETUP、FOLD、UPL、APPS |
 
-LCD 7～12は名称をハードコードしたマクロではなく、Codex Microのアクションスロットです。Codex側で割当を変更すると、Codex Deckが取得する表示と実行内容も追従します。表中の名称はCodex Microの既定構成を示します。
+公式30キーには独自の「危険キー」分類を設けていません。`APPR`、`REJ`、`DEL`、`PLAY`を含む30キーすべてを通常の単押しで使用できます。`DEL`は現行実装ではチャットのアーカイブです。`PLAY`は先頭に設定されたEnvironment Actionを呼び出します。`GIT`、`MRG`、`PR`は各フローまたはレビュー画面を開くキーであり、キーを押しただけでcommit、merge、PR公開を確定するものではありません。
 
-**下段3物理ボタンの扱いは方式ごとに異なります。**
+公式30キーとは別の`Rate Limit Reset`だけは、利用可能なreset creditを消費するため1.2秒の長押し確認を使用します。
 
-| 方式 | 下段左 | 下段中央 | 下段右 |
-|---|---|---|---|
-| VSD Craft（推奨） | シーンシフト | シーンシフト | シーンシフト |
-| M18直接接続（フルOSS構成） | `environmentAction1` | `environmentAction2` | `environmentAction3` |
-
-フルOSS構成の下段3ボタンは、M18内のページやプロファイルを切り替えません。Codex Desktopが登録している環境アクションのコマンドIDを、Codex Microと同じコマンドランナーへ渡します。各スロットが何をするかはCodex側の設定に従います。
+下段左・中央・右は、方式を問わずシーン1・2・3への直接切替に使います。下段ボタンは操作枠に数えないため、必要数は`15 × 3 = 45`です。
 
 ---
 
@@ -132,17 +116,27 @@ VSD Inside M18
 
 RustとC++ツールチェーンは**不要**です。これらが必要なのはフルOSS構成のみです。
 
+VSDinsideがMITで公開しているのは[Plugin SDK](https://github.com/VSDinside/VSDinside-Plugin-SDK)です。VSD Craftアプリ本体は[メーカーEULA](https://store.steampowered.com/eula/4269970_eula_0?l=english)の対象で第三者配布が許可されていないため、本リポジトリには転載せず、未導入時に[公式配布元](https://www.vsdinside.com/pages/download)から利用者の端末へ直接取得します。
+
 ### シーン構成
 
-VSD Craftの標準UIでキーをドラッグ配置します。実機には次の3環境を設定済みです。
+VSD Craftの標準UIでキーをドラッグ配置します。実機には上表の3シーンを設定します。
 
-- 下左：`Codex Micro` — Agent 1～6、FAST、APPR、REJ、SPLIT、MIC、CODEX、上・左・右
-- 下中央：`Codex Tools` — Reasoning、New Task、使用量、DIFF、Browser、Settingsなど
-- 下右：`デフォルトシーン` — M18メーカー標準面
+- 下左：シーン1 — Agent／Navigation／Host／Usage
+- 下中央：シーン2 — 公式キー前半15件
+- 下右：シーン3 — 公式キー後半15件
 
 下3物理ボタンにはVSD Craft標準の`シーンシフト`だけを設定し、Codex操作は割り当てません。3環境のどの面からでも同じ位置へ直接切り替わります。
 
 ### Windowsへの導入
+
+#### 配布版（推奨）
+
+GitHub Releaseの`codex-deck-vsd-craft-windows-v*.zip`を展開し、`Install Codex Deck.cmd`をダブルクリックします。VSD Craftが未導入の場合は、公式VSDinsideサーバーからMSIを直接取得し、Authenticode署名と発行元を検証してからメーカーのインストーラーを開きます。公式アプリ本体を本リポジトリの配布物へ転載はしません。ソース、Node.js、ESET、別途用意するVSD Craftインストーラは不要です。
+
+配布ZIPは既存プラグインを`%LOCALAPPDATA%\CodexDeck\backups`へ退避してから、同梱済みプラグインをVSD Craftへ配置します。署名付きインストーラではないため、Releaseの`SHA256SUMS.txt`でダウンロードを照合してください。
+
+#### ソースからの導入
 
 Windows版インストーラはビルドを行いません。**先にプラグインをビルドしてください。**
 
@@ -180,6 +174,14 @@ npm run validate:vsd-craft
 
 ### macOSへの導入
 
+#### 配布版（推奨）
+
+GitHub Releaseの`codex-deck-vsd-craft-macos-v*.zip`を展開し、`Install Codex Deck.command`をControlクリックして「開く」を選びます。VSD Craftが未導入の場合は、公式VSDinsideサーバーからPKGを直接取得し、Appleパッケージ署名を検証してからInstallerを開きます。メーカー側の導入完了後、もう一度Codex Deckインストーラーを実行します。公式アプリ本体は転載せず、プラグインとCodex接続ランタイムだけを同梱します。
+
+配布ZIPはmacOSの実行権限を保持しますが、未署名・未公証です。Releaseの`SHA256SUMS.txt`で照合してから実行してください。
+
+#### ソースからの導入
+
 VSD Craft公式macOS版とNode.js 20以上を先に導入してください。スクリプトがビルドから配置まで実行するため、事前ビルドは不要です。
 
 ```zsh
@@ -188,6 +190,14 @@ chmod +x scripts/install-vsd-craft-codex-deck-macos.sh
 ```
 
 プラグインはVSD Craftの標準保存先`~/Library/Application Support/HotSpot/StreamDock/plugins`へ配置し、既存版を`~/Library/Application Support/CodexDeck/backups`へ退避します。Codex接続には既存のmacOS LaunchAgentをそのまま使用します。詳細は[macOS導入手順](docs/vsd-craft/MACOS.md)を参照してください。
+
+両OSの配布物は次のコマンドで同時生成できます。
+
+```powershell
+npm run package:vsd-craft-installers
+```
+
+出力先は`outputs/vsd-craft-installers-v<version>`です。
 
 ### 会議パネル（Windows専用）
 
@@ -296,7 +306,9 @@ watcherはランタイム終了後に再起動を試み、CodexやM18の再接�
 
 ### 設計資料
 
-[Codex Micro版ニーズ](docs/codex-micro-m18/ニーズ.md) / [修正方針](docs/codex-micro-m18/修正方針.md) / [実行方針](docs/codex-micro-m18/実行方針.md) / [M18セットアップ](docs/M18.md)
+[Codex Micro版ニーズ](docs/codex-micro-m18/ニーズ.md) / [修正方針](docs/codex-micro-m18/修正方針.md) / [実行方針](docs/codex-micro-m18/実行方針.md) / [実装計画書V1](docs/codex-micro-m18/実装計画書V1.md) / [インシデントレポートV1](docs/codex-micro-m18/インシデントレポートV1.md) / [是正実装計画書V2](docs/codex-micro-m18/実装計画書V2.md) / [実装報告書V1](docs/codex-micro-m18/実装報告書V1.md) / [是正実装報告書V2](docs/codex-micro-m18/実装報告書V2.md) / [M18セットアップ](docs/M18.md)
+
+機能スコープ、実装境界、完了条件の正本は上記の「ニーズ」「修正方針」「実行方針」の3文書です。必須操作は合計45個で、下段3ボタンを面切替として使い、15 LCDキー×3シーンへ全件を収容します。README内の単一面の推奨配置を理由に、Joystick下方向、Reasoningエンコーダ、公式30キー、Usage Overview／Reset、New Task、ホスト切替を対象外または将来対応へ縮小しません。
 
 ---
 

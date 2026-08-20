@@ -75,6 +75,19 @@ export function environmentActionCommand(slot: EnvironmentActionSlot): `environm
   return `environmentAction${slot}`;
 }
 
+const COMMAND_REJECTION_MESSAGES = [
+  "Codex command runner is unavailable.",
+  "This Codex command is not active in the current view.",
+  "Codex VS Code event module is unavailable for this keycap.",
+  "Codex VS Code event bus was not found.",
+  "This Codex Micro keycap action is not supported as a standalone key."
+] as const;
+
+export function isCodexCommandRejection(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return COMMAND_REJECTION_MESSAGES.some((candidate) => message.includes(candidate));
+}
+
 const SNAPSHOT_EXPRESSION = `(async () => {
   const urls = [...new Set([
     ...[...document.querySelectorAll('link[href], script[src]')].map((element) => element.href || element.src),
@@ -547,7 +560,7 @@ export class CodexMicroRendererBridge {
     try {
       await this.evaluate(expression);
     } catch (error) {
-      this.disconnect();
+      if (!isCodexCommandRejection(error)) this.disconnect();
       throw error;
     }
   }

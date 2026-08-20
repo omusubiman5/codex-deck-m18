@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import {
-  REASONING_ENCODER_KEYS, environmentActionCommand, resolveAgentDispatch, retainEvaluationPromise, selectCodexMainTarget
+  REASONING_ENCODER_KEYS, environmentActionCommand, isCodexCommandRejection, resolveAgentDispatch,
+  retainEvaluationPromise, selectCodexMainTarget
 } from "../src/codex-micro-renderer-bridge.js";
 import { ADDITIONAL_KEYCAPS, OFFICIAL_KEYCAP_IDS } from "../src/keycaps.js";
 import { visualStatusFromMicro } from "../src/status.js";
@@ -19,6 +20,13 @@ test("official Micro statuses map to the Stream Deck color states", () => {
   assert.equal(visualStatusFromMicro("awaiting-response"), "input");
   assert.equal(visualStatusFromMicro("error"), "error");
   assert.equal(visualStatusFromMicro("idle"), "idle");
+});
+
+test("current-view command rejection is distinct from a transport failure", () => {
+  assert.equal(isCodexCommandRejection(new Error("Error: This Codex command is not active in the current view.")), true);
+  assert.equal(isCodexCommandRejection(new Error("This Codex Micro keycap action is not supported as a standalone key.")), true);
+  assert.equal(isCodexCommandRejection(new Error("Codex-Runtime-Antwort hat zu lange gedauert.")), false);
+  assert.equal(isCodexCommandRejection(new Error("socket closed")), false);
 });
 
 test("official keycap SVG contents are not bundled in the public source", async () => {
@@ -177,6 +185,7 @@ test("standalone keycaps resolve Codex's live registry instead of hardcoding com
   assert.match(source, /\\\\w/);
   assert.match(source, /import\\\\s/);
   assert.match(source, /codex_micro_hid/);
+  assert.match(source, /if \(!isCodexCommandRejection\(error\)\) this\.disconnect\(\)/);
 });
 
 test("Codex key surfaces always use live Micro rendering instead of packaged artwork", async () => {
@@ -209,13 +218,15 @@ test("VSD Craft starts a packaged Windows bridge observer without restart permis
 });
 
 test("controller avoids overlapping polls and redundant image writes", async () => {
-  const [source, targetSource] = await Promise.all([
+  const [source, imageWriter, targetSource] = await Promise.all([
     readFile(new URL("../src/controller.ts", import.meta.url), "utf8"),
+    readFile(new URL("../src/registration-image-writer.ts", import.meta.url), "utf8"),
     readFile(new URL("../src/control-target.ts", import.meta.url), "utf8")
   ]);
-  assert.match(source, /lastImages/);
-  assert.match(source, /const signature = `\$\{title\}\\n\$\{image\}`/);
-  assert.match(source, /this\.lastImages\.get\(action\.id\) === signature/);
+  assert.match(source, /RegistrationImageWriter/);
+  assert.match(imageWriter, /const signature = `\$\{title\}\\n\$\{image\}`/);
+  assert.match(imageWriter, /this\.lastImages\.get\(action\.id\) === signature/);
+  assert.match(imageWriter, /this\.generations\.get\(action\.id\) !== generation/);
   assert.match(source, /scheduleRefresh/);
   assert.match(source, /status === "thinking" \|\| status === "input"/);
   assert.match(source, /pressedAgents/);

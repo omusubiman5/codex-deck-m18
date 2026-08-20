@@ -29,7 +29,7 @@ test("runtime override targets the main renderer instead of macOS avatar surface
   assert.equal(target?.webSocketDebuggerUrl, "ws://main");
 });
 
-test("startup monitoring survives Codex updates without duplicate watchers", async () => {
+test("startup monitoring is observation-only and never restarts Codex", async () => {
   const [watcher, launcher, build, supervisor] = await Promise.all([
     readFile(new URL("../launcher/Watch-CodexDeck.ps1", import.meta.url), "utf8"),
     readFile(new URL("../launcher/Start-CodexDeck.ps1", import.meta.url), "utf8"),
@@ -39,26 +39,24 @@ test("startup monitoring survives Codex updates without duplicate watchers", asy
 
   assert.match(watcher, /Local\\CodexDeckBridgeWatcher/);
   assert.match(watcher, /Get-AppxPackage -Name 'OpenAI\.Codex'/);
-  assert.match(watcher, /Test-RecoveryAllowed/);
-  assert.match(watcher, /rapid main-process replacement recovers/);
-  assert.match(watcher, /watcher-recovery\.json/);
-  assert.match(watcher, /recovery budget exhausted/i);
-  assert.match(watcher, /unsafe main-process count/i);
-  assert.match(watcher, /invalid; automatic recovery remains blocked/i);
-  assert.match(watcher, /\[DateTimeOffset\]::MaxValue/);
-  assert.match(watcher, /Save-RecoveryAttempt \$generation[\s\S]*Invoke-CodexDeckLauncher -ForceRestart/);
+  assert.match(watcher, /observation-only mode/i);
+  assert.match(watcher, /automatic restart disabled/i);
+  assert.doesNotMatch(watcher, /RecoverExistingSession/);
+  assert.doesNotMatch(watcher, /Invoke-CodexDeckLauncher -ForceRestart/);
   assert.match(watcher, /Clear-StalePortFile/);
-  assert.equal(watcher.match(/Invoke-CodexDeckLauncher -ForceRestart/g)?.length, 1);
 
   assert.doesNotMatch(supervisor, /watcher, "-RecoverExistingSession"/);
   assert.match(supervisor, /without automatic recovery permission/i);
 
   assert.match(launcher, /Watch-CodexDeck\.ps1/);
-  assert.match(launcher, /-RecoverExistingSession/);
+  assert.doesNotMatch(launcher, /-RecoverExistingSession/);
   assert.match(launcher, /Start-BridgeWatcher/);
   assert.match(launcher, /Get-InstalledLauncherRoot/);
   assert.match(launcher, /Install-WatcherBundle/);
   assert.match(launcher, /LocalAppData.*CodexDeck.*launcher/is);
+  assert.match(launcher, /-not \$existingPort -and -not \$ForceRestart/);
+  assert.match(launcher, /was left untouched[\s\S]*run again with -ForceRestart/i);
+  assert.match(launcher, /if \(\$ForceRestart\)[\s\S]*Stop-Process/);
   assert.match(build, /Watch-CodexDeck\.ps1/);
   assert.match(build, /Configure-CodexDeckRelay\.ps1/);
   assert.match(build, /Configure-CodexDeckMobile\.ps1/);
@@ -68,7 +66,7 @@ test("startup monitoring survives Codex updates without duplicate watchers", asy
   assert.doesNotMatch(build, /cp\(resolve\("node_modules\/ws"\).*recursive: true/s);
 });
 
-test("watcher recovery decision self-test passes in PowerShell", async (context) => {
+test("watcher observation self-test passes in PowerShell", async (context) => {
   if (process.platform !== "win32") {
     context.skip("Windows PowerShell watcher self-test runs on Windows");
     return;
@@ -78,7 +76,7 @@ test("watcher recovery decision self-test passes in PowerShell", async (context)
   const { stdout } = await execFileAsync("powershell.exe", [
     "-NoLogo", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", watcherPath, "-SelfTest"
   ]);
-  assert.match(stdout, /self-test passed \(14 cases\)/i);
+  assert.match(stdout, /self-test passed \(3 cases\)/i);
 });
 
 test("launcher supports the current shared-chunk native detection path", () => {

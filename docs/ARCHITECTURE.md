@@ -23,8 +23,8 @@ path without invalidating the watcher. A named mutex prevents duplicates.
 The watcher follows three safety rules:
 
 1. A healthy debug-enabled Codex session is reused and never restarted.
-2. A normal session that was already open when monitoring was installed is left untouched until its next normal restart.
-3. A later Codex launch, update restart, or crash recovery without the required loopback port receives at most one recovery restart for that process generation.
+2. A normal session that was already open when monitoring was installed is left untouched.
+3. A later Codex launch, update restart, or crash recovery without the required loopback port remains untouched; automatic restart is disabled.
 
 Stale port metadata is removed automatically. The bounded watcher log lives at
 `%LOCALAPPDATA%\CodexDeck\watcher.log`.
@@ -33,13 +33,12 @@ On macOS, the launcher discovers the running or installed app by its signed
 bundle metadata, reads `CFBundleExecutable`, and launches the app bundle through
 LaunchServices with the same loopback-only debugging arguments. The per-user
 LaunchAgent watcher stores a main-process generation (PID, start time, and
-executable path), reuses healthy bridges, and performs at most one graceful
-recovery restart for a later stable unbridged generation. It never launches a
-closed Codex app. A generation-independent cooldown prevents a failed recovery
-from becoming a PID-to-PID restart loop, even if LaunchServices immediately
-creates another process. The generation and recovery policy is persisted
-atomically and guarded by a PID-directory lock. LaunchAgent stderr is retained
-separately from the bounded watcher log for post-crash diagnosis.
+executable path), reuses healthy bridges, and leaves every unbridged generation
+untouched. It never launches or restarts Codex automatically. The observation
+state is persisted atomically and guarded by a PID-directory lock. LaunchAgent
+stderr is retained separately from the bounded watcher log for post-crash
+diagnosis. A restart is available only through the explicit manual `--restart`
+command.
 
 Both platforms persist a stable `hostId`, `hostName`, and platform identifier.
 The relay uses that identity; the CDP port is never a relay endpoint.

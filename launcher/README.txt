@@ -9,21 +9,19 @@ existing debug session instead of closing and reopening Codex. Use
 `Start-CodexDeck.ps1 -ForceRestart` only when you explicitly want a clean
 restart.
 
-If Codex was started normally without a debug port, the launcher must restart
-that session once. It then starts the installed Codex Windows app with a
-loopback-only Chrome DevTools port and enables the Codex Micro UI for that
-session. It does not patch the Codex installation or upload any data.
+If Codex was started normally without a debug port, the launcher leaves that
+session untouched and exits with instructions. Save all work and use
+`-ForceRestart` only when you explicitly accept restarting every Codex task.
 
 Recommended: run `Start-CodexDeck.ps1 -InstallStartup` once. This installs a
 durable private launcher copy under `%LOCALAPPDATA%\CodexDeck\launcher` plus a
 single hidden background watcher that stays active after Windows sign-in. It
-detects Codex restarts and app updates, removes stale bridge data, and restores
-the bridge automatically whenever Codex starts again.
+detects Codex restarts and app updates, removes stale bridge data, and reuses a
+healthy bridge. It never restarts an unbridged Codex session automatically.
 
 Installing the watcher never restarts an already-open normal Codex session.
-That session is recovered after you next close and reopen Codex. At later
-Windows logins or after Codex updates, the watcher may perform one immediate
-recovery restart when Codex launches without its required loopback port.
+After you next close Codex normally, launch it through Codex Deck to create the
+loopback bridge. Windows logins and Codex updates do not grant restart permission.
 
 Remove the watcher with `Start-CodexDeck.ps1 -UninstallStartup`. Diagnostics
 are written to `%LOCALAPPDATA%\CodexDeck\watcher.log`.
