@@ -26,6 +26,7 @@
     "test": "node scripts/run-tests.mjs",
     "validate": "npm run build && streamdeck validate dist/com.simeo.codex-deck.sdPlugin",
     "validate:vsd-craft": "npm run build:vsd-craft && node scripts/validate-vsd-craft.mjs",
+    "package:vsd-craft-installers": "npm run validate:vsd-craft && node scripts/package-vsd-craft-installers.mjs",
     "configure:meeting-panels": "node scripts/configure-vsd-craft-meeting-panels.mjs",
     "install:vsd-craft:macos": "zsh scripts/install-vsd-craft-codex-deck-macos.sh",
     "pack": "npm run build && streamdeck pack dist/com.simeo.codex-deck.sdPlugin --force",

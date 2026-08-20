@@ -17,6 +17,7 @@ import {
 } from "./render.js";
 import { openCodexThread } from "./codex-open.js";
 import { agentPrimaryLabel } from "./project-label.js";
+import { RegistrationImageWriter } from "./registration-image-writer.js";
 import { visualStatusFromMicro } from "./status.js";
 import type {
   CodexHost, HostHealth, MicroActionSlot, MicroDirection, MicroSnapshot, ReasoningAdjustment,
@@ -45,7 +46,7 @@ export class DeckController {
   private readonly microActions = new Map<string, MicroActionRegistration>();
   private readonly fixedActions = new Map<string, FixedIconRegistration>();
   private readonly keycapImages = new Map<string, Promise<string | null>>();
-  private readonly lastImages = new Map<string, string>();
+  private readonly imageWriter = new RegistrationImageWriter();
   private readonly hostToggleActions = new Map<string, DeckSurfaceAction>();
   private readonly usageLimitActions = new Map<string, UsageLimitRegistration>();
   private readonly usageOverviewActions = new Map<string, DeckSurfaceAction>();
@@ -179,6 +180,7 @@ export class DeckController {
   }
 
   registerAgent(slot: number, action: DeckSurfaceAction): void {
+    this.imageWriter.register(action.id);
     this.agents.set(action.id, { action, slot });
     void this.renderAgent({ action, slot });
   }
@@ -194,6 +196,7 @@ export class DeckController {
   }
 
   registerMicroAction(slot: MicroActionSlot, action: DeckSurfaceAction): void {
+    this.imageWriter.register(action.id);
     this.microActions.set(action.id, { action, slot });
     void this.renderMicroAction({ action, slot });
   }
@@ -203,8 +206,10 @@ export class DeckController {
   }
 
   registerFixedAction(id: string, action: DeckSurfaceAction, source: FixedIconSource): void {
-    this.fixedActions.set(action.id, { action, id, source });
-    void this.renderFixedAction({ action, id, source });
+    this.imageWriter.register(action.id);
+    const registration = { action, id, source };
+    this.fixedActions.set(action.id, registration);
+    void this.renderFixedAction(registration);
   }
 
   unregisterFixedAction(action: ActionIdentity): void {
@@ -212,22 +217,25 @@ export class DeckController {
   }
 
   registerHostToggle(action: DeckSurfaceAction): void {
+    this.imageWriter.register(action.id);
     this.hostToggleActions.set(action.id, action);
     void this.renderHostToggle(action);
   }
 
   unregisterHostToggle(action: ActionIdentity): void {
     this.hostToggleActions.delete(action.id);
-    this.lastImages.delete(action.id);
+    this.imageWriter.unregister(action.id);
   }
 
   registerUsageLimit(action: DeckSurfaceAction, mode: UsageLimitMode): void {
+    this.imageWriter.register(action.id);
     const registration = { action, mode };
     this.usageLimitActions.set(action.id, registration);
     this.renderUsageAction("Usage limit", action, () => this.renderUsageLimit(registration));
   }
 
   updateUsageLimitMode(action: DeckSurfaceAction, mode: UsageLimitMode): void {
+    this.imageWriter.register(action.id);
     const registration = { action, mode };
     this.usageLimitActions.set(action.id, registration);
     this.renderUsageAction("Usage limit", action, () => this.renderUsageLimit(registration));
@@ -238,6 +246,7 @@ export class DeckController {
   }
 
   registerUsageOverview(action: DeckSurfaceAction): void {
+    this.imageWriter.register(action.id);
     this.usageOverviewActions.set(action.id, action);
     this.renderUsageAction("Usage overview", action, () => this.renderUsageOverview(action));
   }
@@ -247,6 +256,7 @@ export class DeckController {
   }
 
   registerRateLimitReset(action: DeckSurfaceAction): void {
+    this.imageWriter.register(action.id);
     this.rateLimitResetActions.set(action.id, action);
     this.renderUsageAction("Rate-limit reset", action, () => this.renderRateLimitReset(action));
   }
@@ -424,6 +434,7 @@ export class DeckController {
   }
 
   private async renderAgent({ action, slot }: AgentRegistration): Promise<void> {
+    const generation = this.imageWriter.current(action.id);
     const agent = this.routedSlots[slot];
     const health = agent ? this.healthForHost(agent.host) : this.targetHealth();
     const unavailableTitle = health.state === "degraded" ? "Signals uncertain"
@@ -437,7 +448,7 @@ export class DeckController {
     const hostBadge = agent && this.relayClient ? (agent.host.platform === "darwin" ? "M" : "W") : undefined;
     await this.setImage(action, renderAgentKey(
       slot, title, status, agent?.selected ?? false, this.animationFrame, theme, hostBadge,
-      health.state, agent?.contextUsedPercent, this.showContextRings, secondaryTitle));
+      health.state, agent?.contextUsedPercent, this.showContextRings, secondaryTitle), "", generation);
   }
 
   private async renderAnimatedAgents(): Promise<void> {
@@ -453,47 +464,53 @@ export class DeckController {
   }
 
   private async renderMicroAction({ action, slot }: MicroActionRegistration): Promise<void> {
+    const generation = this.imageWriter.current(action.id);
     const snapshot = this.targetSnapshot();
     const keycapId = snapshot?.layout.slots[slot]?.keycapId;
     if (!keycapId) return;
     const image = await this.keycapImage(keycapId, snapshot?.theme ?? "dark");
-    if (image) await this.setImage(action, image);
+    if (image) await this.setImage(action, image, "", generation);
   }
 
   private async renderFixedAction(registration: FixedIconRegistration): Promise<void> {
+    const generation = this.imageWriter.current(registration.action.id);
     const theme = this.targetSnapshot()?.theme ?? "dark";
     const image = registration.source.kind === "builtin"
       ? renderBuiltinKeycap(registration.source.name, theme)
       : await this.keycapImage(registration.source.keycapId, theme);
-    if (image) await this.setImage(registration.action, image);
+    if (image) await this.setImage(registration.action, image, "", generation);
   }
 
   private async renderHostToggle(action: DeckSurfaceAction): Promise<void> {
+    const generation = this.imageWriter.current(action.id);
     const label = this.targetPlatform === "darwin" ? "MAC" : "WIN";
     const theme = this.targetSnapshot()?.theme ?? "dark";
     const health = this.targetHealth().state;
-    await this.setImage(action, renderHostTargetKey(label, health, theme));
+    await this.setImage(action, renderHostTargetKey(label, health, theme), "", generation);
   }
 
   private async renderUsageLimit({ action, mode }: UsageLimitRegistration): Promise<void> {
+    const generation = this.imageWriter.current(action.id);
     const source = this.accountUsageSource();
     const snapshot = source.snapshot;
     const window = selectUsageWindow(snapshot?.usage, mode);
     const requestedKind: UsageWindowKind = mode === "auto" ? (window?.kind ?? "other") : mode;
     await this.setImage(action, renderUsageLimitKey(
       window, requestedKind, snapshot?.theme ?? "dark", source.health.state
-    ));
+    ), "", generation);
   }
 
   private async renderUsageOverview(action: DeckSurfaceAction): Promise<void> {
+    const generation = this.imageWriter.current(action.id);
     const source = this.accountUsageSource();
     const windows = source.snapshot?.usage?.windows ?? [];
     await this.setImage(action, renderUsageOverviewKey(
       windows, source.snapshot?.theme ?? "dark", source.health.state
-    ));
+    ), "", generation);
   }
 
   private async renderRateLimitReset(action: DeckSurfaceAction): Promise<void> {
+    const generation = this.imageWriter.current(action.id);
     const source = this.accountUsageSource();
     const snapshot = source.snapshot;
     const startedAt = this.resetHolds.get(action.id);
@@ -504,7 +521,7 @@ export class DeckController {
       progress,
       snapshot?.theme ?? "dark",
       source.health.state
-    ));
+    ), "", generation);
   }
 
   private async renderResetHolds(): Promise<void> {
@@ -577,11 +594,13 @@ export class DeckController {
     return target;
   }
 
-  private async setImage(action: DeckSurfaceAction, image: string, title = ""): Promise<void> {
-    const signature = `${title}\n${image}`;
-    if (this.lastImages.get(action.id) === signature) return;
-    await Promise.all([action.setImage(image), action.setTitle(title)]);
-    this.lastImages.set(action.id, signature);
+  private async setImage(
+    action: DeckSurfaceAction,
+    image: string,
+    title = "",
+    generation = this.imageWriter.current(action.id)
+  ): Promise<void> {
+    await this.imageWriter.write(action, image, title, generation);
   }
 
   private renderUsageAction(label: string, action: DeckSurfaceAction, render: () => Promise<void>): void {
@@ -592,7 +611,7 @@ export class DeckController {
 
   private unregister<T>(action: ActionIdentity, registrations: Map<string, T>): void {
     registrations.delete(action.id);
-    this.lastImages.delete(action.id);
+    this.imageWriter.unregister(action.id);
   }
 
   private scheduleRefresh(): void {

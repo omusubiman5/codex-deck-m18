@@ -31,6 +31,18 @@ try {
   if ($LASTEXITCODE -ne 0) { throw 'Tests failed.' }
   & npm run validate
   if ($LASTEXITCODE -ne 0) { throw 'Stream Deck validation failed.' }
+  $previousInstallerVersion = $env:CODEX_DECK_RELEASE_VERSION
+  $env:CODEX_DECK_RELEASE_VERSION = $version
+  try {
+    & npm run package:vsd-craft-installers
+    if ($LASTEXITCODE -ne 0) { throw 'VSD Craft installer packaging failed.' }
+  } finally {
+    if ($null -eq $previousInstallerVersion) {
+      Remove-Item Env:CODEX_DECK_RELEASE_VERSION -ErrorAction SilentlyContinue
+    } else {
+      $env:CODEX_DECK_RELEASE_VERSION = $previousInstallerVersion
+    }
+  }
   & npm run pack
   if ($LASTEXITCODE -ne 0) { throw 'Stream Deck packaging failed.' }
   & node scripts/audit-release.mjs
@@ -39,6 +51,9 @@ try {
   Remove-Item -LiteralPath $output -Recurse -Force -ErrorAction SilentlyContinue
   New-Item -ItemType Directory -Force -Path $output | Out-Null
   Copy-Item -LiteralPath (Join-Path $root 'com.simeo.codex-deck.streamDeckPlugin') -Destination $output
+  $vsdInstallerRoot = Join-Path $root "outputs\vsd-craft-installers-v$version"
+  Copy-Item -LiteralPath (Join-Path $vsdInstallerRoot "codex-deck-vsd-craft-windows-v$version.zip") -Destination $output
+  Copy-Item -LiteralPath (Join-Path $vsdInstallerRoot "codex-deck-vsd-craft-macos-v$version.zip") -Destination $output
   Compress-Archive -Path (Join-Path $root 'release\codex-deck-launcher') -DestinationPath (Join-Path $output "codex-deck-launcher-windows-v$version.zip") -CompressionLevel Optimal
   if (-not [string]::IsNullOrWhiteSpace($MacArchivePath)) {
     if (-not (Test-Path -LiteralPath $MacArchivePath -PathType Leaf)) { throw "Mac archive not found: $MacArchivePath" }

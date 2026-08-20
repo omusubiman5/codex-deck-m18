@@ -181,7 +181,11 @@ abstract class DirectKeycapAction extends SingletonAction {
   constructor(private readonly controller: DeckController, private readonly keycapId: OfficialKeycapId) { super(); }
 
   override onWillAppear(ev: WillAppearEvent): void {
-    if (ev.action.isKey()) this.controller.registerFixedAction(`keycap-${this.keycapId}`, ev.action, { kind: "local", keycapId: this.keycapId });
+    if (ev.action.isKey()) this.controller.registerFixedAction(
+      `keycap-${this.keycapId}`,
+      ev.action,
+      { kind: "local", keycapId: this.keycapId }
+    );
   }
 
   override onWillDisappear(ev: WillDisappearEvent): void {
@@ -189,6 +193,10 @@ abstract class DirectKeycapAction extends SingletonAction {
   }
 
   override async onKeyDown(ev: KeyDownEvent): Promise<void> {
+    await this.run(ev);
+  }
+
+  private async run(ev: KeyDownEvent | KeyUpEvent): Promise<void> {
     try { await this.controller.runKeycap(this.keycapId); }
     catch (error) {
       streamDeck.logger.error(`Keycap ${this.keycapId} failed: ${String(error)}`);

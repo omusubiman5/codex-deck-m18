@@ -1,7 +1,6 @@
 param(
   [switch]$Once,
   [switch]$SelfTest,
-  [switch]$RecoverExistingSession,
   [ValidateRange(1, 30)]
   [int]$PollSeconds = 2
 )
@@ -16,30 +15,7 @@ $relayConfigPath = Join-Path $stateRoot 'relay-client.json'
 $relayTunnelPidPath = Join-Path $stateRoot 'relay-tunnel.pid'
 $stopPath = Join-Path $stateRoot 'watcher.stop'
 $logPath = Join-Path $stateRoot 'watcher.log'
-$recoveryStatePath = Join-Path $stateRoot 'watcher-recovery.json'
 $mutexName = 'Local\CodexDeckBridgeWatcher'
-$recoveryCooldownMinutes = 30
-
-function Test-RecoveryAllowed(
-  [string]$Generation,
-  [string]$HandledGeneration,
-  [bool]$RecoverExisting,
-  [bool]$SawStopped,
-  [bool]$HadHealthy,
-  [int]$MainProcessCount,
-  [int]$AutomaticRecoveries,
-  [bool]$CircuitOpen
-) {
-  if ($MainProcessCount -ne 1 -or $AutomaticRecoveries -ge 1 -or $CircuitOpen) { return $false }
-  $generationChanged = -not [string]::IsNullOrWhiteSpace($HandledGeneration) -and $Generation -ne $HandledGeneration
-  $RecoverExisting -or $SawStopped -or $HadHealthy -or $generationChanged
-}
-
-function Test-RecoveryCooldown($LastAttempt, [DateTimeOffset]$Now, [int]$CooldownMinutes) {
-  if ($null -eq $LastAttempt) { return $false }
-  $attempt = [DateTimeOffset]$LastAttempt
-  ($Now - $attempt).TotalMinutes -lt $CooldownMinutes
-}
 
 function Test-RelayTunnelCommand([string]$CommandLine, [string]$SshHost, [int]$LocalPort, [int]$RemotePort) {
   if ([string]::IsNullOrWhiteSpace($CommandLine) -or [string]::IsNullOrWhiteSpace($SshHost)) { return $false }
@@ -53,17 +29,6 @@ function Test-RelayTunnelCommand([string]$CommandLine, [string]$SshHost, [int]$L
 
 if ($SelfTest) {
   $cases = @(
-    @{ Name = 'initial existing session remains untouched'; Expected = $false; Actual = Test-RecoveryAllowed 'v1:100' '' $false $false $false 1 0 $false },
-    @{ Name = 'same process remains untouched'; Expected = $false; Actual = Test-RecoveryAllowed 'v1:100' 'v1:100' $false $false $false 1 0 $false },
-    @{ Name = 'rapid main-process replacement recovers'; Expected = $true; Actual = Test-RecoveryAllowed 'v1:101' 'v1:100' $false $false $false 1 0 $false },
-    @{ Name = 'observed stopped interval recovers'; Expected = $true; Actual = Test-RecoveryAllowed 'v1:101' '' $false $true $false 1 0 $false },
-    @{ Name = 'previous healthy bridge recovers'; Expected = $true; Actual = Test-RecoveryAllowed 'v2:200' 'v1:100' $false $false $true 1 0 $false },
-    @{ Name = 'login recovery handles startup race'; Expected = $true; Actual = Test-RecoveryAllowed 'v1:100' '' $true $false $false 1 0 $false },
-    @{ Name = 'multiple main processes block recovery'; Expected = $false; Actual = Test-RecoveryAllowed 'v1:100' '' $true $false $false 2 0 $false },
-    @{ Name = 'one recovery per watcher lifetime'; Expected = $false; Actual = Test-RecoveryAllowed 'v1:101' 'v1:100' $false $true $true 1 1 $false },
-    @{ Name = 'persistent circuit blocks a new watcher'; Expected = $false; Actual = Test-RecoveryAllowed 'v1:100' '' $true $false $false 1 0 $true },
-    @{ Name = 'recent recovery is inside cooldown'; Expected = $true; Actual = Test-RecoveryCooldown ([DateTimeOffset]'2026-01-01T00:00:00Z') ([DateTimeOffset]'2026-01-01T00:29:59Z') 30 },
-    @{ Name = 'expired recovery is outside cooldown'; Expected = $false; Actual = Test-RecoveryCooldown ([DateTimeOffset]'2026-01-01T00:00:00Z') ([DateTimeOffset]'2026-01-01T00:30:00Z') 30 },
     @{ Name = 'managed relay tunnel is recognized'; Expected = $true; Actual = Test-RelayTunnelCommand 'ssh.exe -N -T -L 127.0.0.1:47651:127.0.0.1:47651 example-mac' 'example-mac' 47651 47651 },
     @{ Name = 'Codex remote CLI SSH is not adopted'; Expected = $false; Actual = Test-RelayTunnelCommand 'ssh -T example-mac "codex app-server proxy"' 'example-mac' 47651 47651 },
     @{ Name = 'different forwarded port is not adopted'; Expected = $false; Actual = Test-RelayTunnelCommand 'ssh.exe -N -T -L 127.0.0.1:40000:127.0.0.1:40000 example-mac' 'example-mac' 47651 47651 }
@@ -86,26 +51,6 @@ function Write-WatcherLog([string]$Message) {
   $line = "[$([DateTimeOffset]::Now.ToString('o'))] $Message"
   Add-Content -LiteralPath $logPath -Value $line -Encoding UTF8
   Write-Host $line
-}
-
-function Get-LastRecoveryAttempt {
-  if (-not (Test-Path -LiteralPath $recoveryStatePath)) { return $null }
-  try {
-    $state = Get-Content -LiteralPath $recoveryStatePath -Raw | ConvertFrom-Json
-    [DateTimeOffset]::Parse([string]$state.attemptedAt)
-  }
-  catch {
-    Write-WatcherLog "Recovery circuit state is invalid; automatic recovery remains blocked: $($_.Exception.Message)"
-    [DateTimeOffset]::MaxValue
-  }
-}
-
-function Save-RecoveryAttempt([string]$Generation) {
-  $state = [ordered]@{
-    attemptedAt = [DateTimeOffset]::Now.ToString('o')
-    generation = $Generation
-  } | ConvertTo-Json
-  [IO.File]::WriteAllText($recoveryStatePath, "$state`n", [Text.UTF8Encoding]::new($false))
 }
 
 function Get-RelayTunnelConfig {
@@ -250,12 +195,11 @@ function Test-LauncherReady {
   @($runtimeCandidates | Where-Object { Test-Path -LiteralPath $_ }).Count -gt 0
 }
 
-function Invoke-CodexDeckLauncher([switch]$ForceRestart) {
+function Invoke-CodexDeckLauncher {
   if (-not (Test-LauncherReady)) {
     throw 'The Codex Deck launcher bundle or Node.js is unavailable; Codex was not restarted.'
   }
   $arguments = @('-NoLogo', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $launcherPath)
-  if ($ForceRestart) { $arguments += '-ForceRestart' }
   $output = & $powerShellPath @arguments 2>&1
   foreach ($line in $output) { Write-WatcherLog "Launcher: $line" }
   if ($LASTEXITCODE -ne 0) { throw "Codex Deck launcher failed with exit code $LASTEXITCODE." }
@@ -269,17 +213,13 @@ if (-not $createdNew) {
   exit 0
 }
 
-$sawStoppedSession = $false
-$hadHealthyBridge = $false
 $handledGeneration = ''
 $lastHealthyGeneration = ''
 $lastState = ''
 $lastRelayState = ''
-$automaticRecoveries = 0
-$recoverExistingPending = $RecoverExistingSession.IsPresent
 
 try {
-  Write-WatcherLog "Watcher started (recoverExisting=$($RecoverExistingSession.IsPresent))."
+  Write-WatcherLog 'Watcher started in observation-only mode; automatic Codex restart is disabled.'
   while ($true) {
     if (Test-Path -LiteralPath $stopPath) {
       Write-WatcherLog 'Watcher stop requested.'
@@ -302,7 +242,6 @@ try {
       if ($processes.Count -eq 0) {
         if ($lastState -ne 'stopped') { Write-WatcherLog 'Codex is not running; waiting for its next launch.' }
         $lastState = 'stopped'
-        $sawStoppedSession = $true
         $handledGeneration = ''
         Clear-StalePortFile
       }
@@ -311,8 +250,6 @@ try {
         $port = Get-HealthyDebugPort $processes
 
         if ($port) {
-          $hadHealthyBridge = $true
-          $sawStoppedSession = $false
           $handledGeneration = $generation
           if ($lastHealthyGeneration -ne $generation) {
             Write-WatcherLog "Healthy Codex Deck bridge detected for Codex $($codex.Version) on port $port."
@@ -323,24 +260,8 @@ try {
         }
         else {
           Clear-StalePortFile
-          $mainProcessCount = Get-CodexMainProcessCount $processes
-          $lastRecoveryAttempt = Get-LastRecoveryAttempt
-          $circuitOpen = Test-RecoveryCooldown $lastRecoveryAttempt ([DateTimeOffset]::Now) $recoveryCooldownMinutes
-          $mayRecover = Test-RecoveryAllowed $generation $handledGeneration $recoverExistingPending $sawStoppedSession $hadHealthyBridge $mainProcessCount $automaticRecoveries $circuitOpen
-          $recoverExistingPending = $false
-          if ($generation -ne $handledGeneration -and $mayRecover) {
-            $handledGeneration = $generation
-            $automaticRecoveries++
-            Save-RecoveryAttempt $generation
-            Write-WatcherLog "Codex $($codex.Version) started without the bridge; performing the single permitted automatic recovery restart."
-            Start-Sleep -Milliseconds 1500
-            Invoke-CodexDeckLauncher -ForceRestart
-            $sawStoppedSession = $false
-            $lastState = "recovered:$generation"
-          }
-          elseif ($lastState -ne "unmanaged:$generation") {
-            $reason = if ($mainProcessCount -ne 1) { "unsafe main-process count ($mainProcessCount)" } elseif ($automaticRecoveries -ge 1) { 'watcher recovery budget exhausted' } elseif ($circuitOpen) { "persistent $recoveryCooldownMinutes-minute recovery circuit open" } else { 'no recovery permission' }
-            Write-WatcherLog "Codex generation $generation is running without the bridge and was left untouched ($reason)."
+          if ($lastState -ne "unmanaged:$generation") {
+            Write-WatcherLog "Codex generation $generation is running without the bridge and was left untouched (automatic restart disabled)."
             $lastState = "unmanaged:$generation"
             $handledGeneration = $generation
           }
