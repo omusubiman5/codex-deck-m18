@@ -1,5 +1,7 @@
 # Codex Deck M18
 
+[English](README.en.md) | **日本語**
+
 VSD Inside M18を、Windows版またはmacOS版Codex Desktopの**Codex Micro操作デバイス**として使うためのOSSプロジェクトです。
 
 導入方式は2つあります。
@@ -26,7 +28,7 @@ Codex Deckは、物理デバイスからCodex Desktopの**ネイティブなCode
 - **Agent状態表示**：未割当、待機、作業中、完了未読、承認・入力待ち、エラーを表示
 - **選択中タスク表示**：現在開いているCodexタスクと物理キーを同期
 - **進捗表現**：Codexに合わせたライト／ダーク表示、状態色、控えめなアニメーション
-- **Microアクション**：`ACT06`～`ACT12`の割当とkey-down／key-upをそのまま送信
+- **Microアクション**：公開Stream Deck／VSD Craft経路では`ACT06`～`ACT12`の割当とkey-down／key-upをそのまま送信
 - **ナビゲーション**：Joystickの上下左右でPlan、Forward、Sidebar、Backを操作
 - **Reasoning操作**：エンコーダ押下とReasoning effortの増減
 - **公式Keycapコマンド**：インストール中のCodexからコマンド定義を解決して実行
@@ -45,7 +47,7 @@ M18の15 LCDキーを3面で使い、必須45操作をすべて収容します�
 | Agent 1–6とライブ状態 | 維持 | あり |
 | Joystick上下左右 | 維持 | あり |
 | Encoder押下／Reasoning増減 | 維持 | あり |
-| 公式Keycap 30件 | 維持 | あり |
+| 公式Keycap 30件 | 維持 | VSD Craftでは30件、直接接続では`MIC`枠を`VOICE TALK`へ置換 |
 | Usage Limit／Usage Overview | 維持 | あり |
 | Rate Limit Reset | 維持 | あり |
 | New Task | 維持 | あり（公式`NEW`） |
@@ -57,7 +59,8 @@ M18の15 LCDキーを3面で使い、必須45操作をすべて収容します�
 
 - M18の15個のLCDキーでCodex Microの主要操作を実行
 - 6つのCodexタスク状態をLCDへ同期表示
-- M18専用の`VOICE TALK`からライブ音声会話を開始
+- 直接接続構成ではM18専用の`VOICE TALK`からライブ音声会話を開始
+- VSD Craft構成では同じ位置の既存`MIC`／Push-to-talk操作を維持
 - Plan、Back、Forwardに対応
 - M18のファームウェア、Codex Desktop本体、USBドライバーを改変しない
 - OpenDeck、Elgato Stream Deckハードウェア、仮想HID、キーボードショートカットは不要
@@ -82,16 +85,17 @@ VSD Craft運用時のUSB通信はVSD Craftが行います。上記のUSB IDに�
 | 面 | LCD 15キーの内容 |
 |---|---|
 | シーン1 | Agent 1～6、Joystick上・下・左・右、Reasoningエンコーダ押下、Windows／Macホスト切替＋health、Usage Limit、Usage Overview、Rate Limit Reset |
-| シーン2 | 公式キー前半：FAST、APPR、REJ、SPLIT、VOICE TALK、CODEX、BUG、OAI、TERM、DWN、DEL、NEW、NAV、MAGIC、DIFF |
+| シーン2（VSD Craft） | 公式キー前半：FAST、APPR、REJ、SPLIT、MIC（Push-to-talk）、CODEX、BUG、OAI、TERM、DWN、DEL、NEW、NAV、MAGIC、DIFF |
+| シーン2（直接接続） | FAST、APPR、REJ、SPLIT、VOICE TALK、CODEX、BUG、OAI、TERM、DWN、DEL、NEW、NAV、MAGIC、DIFF |
 | シーン3 | 公式キー後半：PLAY、GIT、BRCH、MRG、PR、PAINT、LAB、PARTY、TIME、MIND+、MIND-、SETUP、FOLD、UPL、APPS |
 
-### M18専用VOICE TALKキー
+### 直接接続構成専用のVOICE TALKキー
 
-シーン2上段右端の`VOICE TALK`は、ChatGPT/Codexデスクトップのライブ音声会話を開始するM18専用キーです。通常のDictation／Push-to-talkや、一般のCodex Micro／Stream Deck公開アクションではありません。単押しでCodexのネイティブな`composer.startVoiceMode`コマンドを直接呼ぶため、デック側のショートカット設定は不要です。
+直接接続構成のシーン2上段右端にある`VOICE TALK`は、ChatGPT/Codexデスクトップのライブ音声会話を開始するM18専用キーです。通常のDictation／Push-to-talkや、一般のCodex Micro／Stream Deck公開アクションではありません。単押しでCodexのネイティブな`composer.startVoiceMode`コマンドを直接呼ぶため、デック側のショートカット設定は不要です。VSD Craft構成ではこの置換を行わず、同じ位置は既存の`MIC`／Push-to-talkです。
 
 押下時だけ、既存のCodex Micro `active`状態色（紫）へ明るくなって戻る約320ms・4フレームのone-shot表示を行います。常時ループはせず、重複押下を制限し、失敗時は静止表示へ戻ります。M18へ送る静止画とアニメーションフレームは、すべて64×64の不透明PNGへ事前変換されます。
 
-公式30キーには独自の「危険キー」分類を設けていません。`APPR`、`REJ`、`DEL`、`PLAY`を含む30キーすべてを通常の単押しで使用できます。`DEL`は現行実装ではチャットのアーカイブです。`PLAY`は先頭に設定されたEnvironment Actionを呼び出します。`GIT`、`MRG`、`PR`は各フローまたはレビュー画面を開くキーであり、キーを押しただけでcommit、merge、PR公開を確定するものではありません。
+公式キー群には独自の「危険キー」分類を設けていません。`APPR`、`REJ`、`DEL`、`PLAY`を含む各キーは通常の単押しで使用できます。`DEL`は現行実装ではチャットのアーカイブです。`PLAY`は先頭に設定されたEnvironment Actionを呼び出します。`GIT`、`MRG`、`PR`は各フローまたはレビュー画面を開くキーであり、キーを押しただけでcommit、merge、PR公開を確定するものではありません。
 
 公式30キーとは別の`Rate Limit Reset`だけは、利用可能なreset creditを消費するため1.2秒の長押し確認を使用します。
 
