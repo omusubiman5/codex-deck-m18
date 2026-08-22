@@ -1,4 +1,5 @@
 import { appendFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { join } from "node:path";
 import { DeckController } from "./controller.js";
 import { codexDeckStateRoot } from "./codex-deck-paths.js";
@@ -6,6 +7,7 @@ import type { DeckRuntime, DeckSurfaceAction } from "./deck-runtime.js";
 import { createM18Binding } from "./m18-action-bindings.js";
 import type { Binding } from "./m18-bindings.js";
 import { M18AdapterClient } from "./m18-adapter-client.js";
+import { rasterizeM18Image } from "./m18-image.js";
 import { M18_SCENES } from "./m18-layout.js";
 import { M18SceneController } from "./m18-scene-controller.js";
 
@@ -26,30 +28,54 @@ const sceneSelectors: Binding[] = [0, 1, 2].map((scene) => ({
   down: async () => sceneController?.selectScene(scene)
 }));
 const eventLog = join(codexDeckStateRoot(), "m18-events.log");
+const frameLog = join(codexDeckStateRoot(), "m18-frames.log");
 const adapter = new M18AdapterClient(async (event) => {
   logger.info(`M18 ${event.type} key=${event.key}.`);
   appendFileSync(eventLog, `${new Date().toISOString()} ${event.type} key=${event.key}\n`, "utf8");
+  const scene = sceneController?.currentScene() ?? 0;
+  const actionId = event.key < 15
+    ? M18_SCENES[scene]?.[event.key]?.id ?? "unbound"
+    : `scene-${event.key - 14}`;
   const binding = event.type === "key_down"
     ? (event.key < 15 ? sceneController?.bindingForLcd(event.key) : sceneSelectors[event.key - 15])
     : pressedBindings.get(event.key);
-  if (!binding) return;
+  if (!binding) {
+    logger.warn(`M18 dispatch missing scene=${scene + 1} key=${event.key} action=${actionId}.`);
+    return;
+  }
   if (event.type === "key_down") {
     if (pressedBindings.has(event.key)) return;
     pressedBindings.set(event.key, binding);
     await binding.down();
+    logger.info(`M18 dispatch ok scene=${scene + 1} key=${event.key} action=${actionId} phase=down.`);
   } else {
     pressedBindings.delete(event.key);
     await binding.up?.();
+    logger.info(`M18 dispatch ok scene=${scene + 1} key=${event.key} action=${actionId} phase=up.`);
   }
 }, (message) => logger.info(`adapter: ${message}`));
 
 const ready = await adapter.start();
 logger.info(`Connected to ${ready.name} (${hex(ready.vid)}:${hex(ready.pid)}).`);
+await adapter.setBrightness(100);
+logger.info("M18 LCD brightness initialized to 100%.");
 
 const controller = new DeckController(runtime);
 const lcdActions = Array.from({ length: 15 }, (_, key): DeckSurfaceAction => ({
   id: `m18-lcd-${key}`,
-  setImage: (image) => adapter.setImage(key, image),
+  setImage: async (image) => {
+    const rasterized = await rasterizeM18Image(image);
+    await adapter.setImage(key, rasterized);
+    const decoded = image.startsWith("data:image/svg+xml") ? decodeURIComponent(image) : "";
+    appendFileSync(frameLog, `${JSON.stringify({
+      at: new Date().toISOString(),
+      scene: sceneController?.currentScene() ?? null,
+      key,
+      sha256: createHash("sha256").update(rasterized).digest("hex"),
+      format: "png-64-opaque",
+      voiceLabel: decoded.includes(">VOICE TALK</text>")
+    })}\n`, "utf8");
+  },
   setTitle: async () => {}
 }));
 

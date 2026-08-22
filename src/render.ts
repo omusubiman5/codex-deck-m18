@@ -1,7 +1,7 @@
 import type { AgentVisualStatus, HostHealthState, ThemeMode, UsageWindow, UsageWindowKind } from "./types.js";
 import { clampPercent, usageLabel } from "./usage.js";
 
-export type BuiltinIconName = "back" | "forward" | "sidebar" | "home" | "navigation";
+export type BuiltinIconName = "back" | "forward" | "sidebar" | "home" | "navigation" | "voice";
 
 export const CODEX_MICRO_COLORS = {
   ready: "#1D9528",
@@ -136,6 +136,7 @@ export function renderImportedKeycap(svg: string, theme: ThemeMode = "light"): s
 }
 
 export function renderBuiltinKeycap(name: BuiltinIconName, theme: ThemeMode = "light"): string {
+  if (name === "voice") return renderFallbackKeycap("VOICE TALK", theme);
   const surface = SURFACES[theme];
   const glyphColor = theme === "dark" ? "#F2F2EE" : "#24292D";
   const glyphs: Record<BuiltinIconName, string> = {
@@ -143,7 +144,8 @@ export function renderBuiltinKeycap(name: BuiltinIconName, theme: ThemeMode = "l
     forward: `<path d="M56 36l30 26-30 26M44 62h41"/>`,
     sidebar: `<rect x="39" y="34" width="66" height="56" rx="10"/><path d="M64 34v56M48 48h8M48 61h8M48 74h8"/>`,
     home: `<path d="M40 60l32-27 32 27M50 56v35h44V56M65 91V70h14v21"/>`,
-    navigation: `<circle cx="58" cy="48" r="6"/><circle cx="86" cy="48" r="6"/><circle cx="58" cy="76" r="6"/><circle cx="86" cy="76" r="6"/>`
+    navigation: `<circle cx="58" cy="48" r="6"/><circle cx="86" cy="48" r="6"/><circle cx="58" cy="76" r="6"/><circle cx="86" cy="76" r="6"/>`,
+    voice: ""
   };
   return toDataUrl(`<svg xmlns="http://www.w3.org/2000/svg" width="144" height="144" viewBox="0 0 144 144">
     <defs><linearGradient id="keycap" x1="0" y1="0" x2="0" y2="1"><stop stop-color="${surface.keyTop}"/><stop offset=".52" stop-color="${surface.keyMiddle}"/><stop offset="1" stop-color="${surface.keyBottom}"/></linearGradient></defs>
@@ -151,6 +153,20 @@ export function renderBuiltinKeycap(name: BuiltinIconName, theme: ThemeMode = "l
     <rect x="7.5" y="7.5" width="129" height="129" rx="15" fill="none" stroke="${surface.innerBorder}" stroke-width="1"/>
     <path d="M16 18C45 8 101 8 128 20" fill="none" stroke="${surface.sheen}" stroke-width="6" stroke-linecap="round" opacity="${theme === "dark" ? "0" : ".72"}"/>
     <g data-icon-source="codex-deck-original" fill="none" stroke="${glyphColor}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" transform="translate(0 10)">${glyphs[name]}</g>
+  </svg>`);
+}
+
+export function renderVoiceKeycap(theme: ThemeMode = "light", pulse = 0): string {
+  const level = Math.max(0, Math.min(1, pulse));
+  if (level === 0) return renderFallbackKeycap("VOICE TALK", theme);
+  const surface = SURFACES[theme];
+  const accentOpacity = (0.10 + level * 0.82).toFixed(3);
+  const borderOpacity = (0.34 + level * 0.66).toFixed(3);
+  return toDataUrl(`<svg xmlns="http://www.w3.org/2000/svg" width="144" height="144" viewBox="0 0 144 144">
+    <defs><linearGradient id="keycap" x1="0" y1="0" x2="0" y2="1"><stop stop-color="${surface.keyTop}"/><stop offset=".52" stop-color="${surface.keyMiddle}"/><stop offset="1" stop-color="${surface.keyBottom}"/></linearGradient></defs>
+    <rect data-theme="${theme}" x="4" y="4" width="136" height="136" rx="18" fill="url(#keycap)" stroke="${surface.border}" stroke-width="2" stroke-opacity="${theme === "dark" ? ".88" : ".34"}"/>
+    <rect data-voice-pulse="${level.toFixed(2)}" data-voice-accent="active" x="7.5" y="7.5" width="129" height="129" rx="15" fill="${CODEX_MICRO_COLORS.active}" fill-opacity="${accentOpacity}" stroke="#FFFFFF" stroke-width="4" stroke-opacity="${borderOpacity}"/>
+    <text data-icon-source="fallback-label" x="72" y="78" text-anchor="middle" font-family="Bahnschrift, Segoe UI Variable Display, Segoe UI, Arial, sans-serif" font-size="17" font-weight="700" letter-spacing="1.1" fill="#FFFFFF">VOICE TALK</text>
   </svg>`);
 }
 

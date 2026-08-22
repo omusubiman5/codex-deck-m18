@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
-import { CODEX_MICRO_COLORS, renderAgentSvg, renderBuiltinKeycap, renderFallbackKeycap, renderHostTargetKey, renderImportedKeycap, SIGNAL_COLORS } from "../src/render.js";
+import { CODEX_MICRO_COLORS, renderAgentSvg, renderBuiltinKeycap, renderFallbackKeycap, renderHostTargetKey, renderImportedKeycap, renderVoiceKeycap, SIGNAL_COLORS } from "../src/render.js";
 
 test("agent status colors match the instructed Codex Micro semantics", () => {
   const expected = {
@@ -87,6 +87,25 @@ test("original navigation icons use the same dark keycap system", () => {
     assert.match(output, /stroke="#F2F2EE"/);
     assert.doesNotMatch(output, /#000(?:000)?\b/i);
   }
+});
+
+test("Voice conversation key is explicitly labeled on the M18 display", () => {
+  const output = decodeURIComponent(renderBuiltinKeycap("voice", "dark").replace(/^data:image\/svg\+xml;charset=utf8,/, ""));
+  assert.match(output, />VOICE TALK<\/text>/);
+  assert.match(output, /data-icon-source="fallback-label"/);
+  assert.doesNotMatch(output, /data-icon-source="codex-deck-original"/);
+  assert.equal(renderBuiltinKeycap("voice", "dark"), renderFallbackKeycap("VOICE TALK", "dark"));
+});
+
+test("Voice pulse preserves the fallback design and returns to the static key", () => {
+  const pulse = decodeURIComponent(renderVoiceKeycap("dark", 1).replace(/^data:image\/svg\+xml;charset=utf8,/, ""));
+  assert.match(pulse, /data-voice-pulse="1\.00"/);
+  assert.match(pulse, /data-voice-accent="active"/);
+  assert.match(pulse, new RegExp(`fill="${CODEX_MICRO_COLORS.active}" fill-opacity="0\\.920"`));
+  assert.match(pulse, /font-weight="700"[^>]+fill="#FFFFFF">VOICE TALK<\/text>/);
+  assert.match(pulse, />VOICE TALK<\/text>/);
+  assert.doesNotMatch(pulse, /codex-deck-original/);
+  assert.equal(renderVoiceKeycap("dark", 0), renderFallbackKeycap("VOICE TALK", "dark"));
 });
 
 test("renderer snapshot derives a theme without a versioned asset hash", async () => {

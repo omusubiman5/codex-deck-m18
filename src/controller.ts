@@ -13,7 +13,7 @@ import type { OfficialKeycapId } from "./keycaps.js";
 import { HostActivityIndex, type HostSnapshot, type RelayCommand } from "./relay-protocol.js";
 import {
   renderAgentKey, renderBuiltinKeycap, renderFallbackKeycap, renderHostTargetKey, renderImportedKeycap,
-  renderRateLimitResetKey, renderUsageLimitKey, renderUsageOverviewKey, type BuiltinIconName
+  renderRateLimitResetKey, renderUsageLimitKey, renderUsageOverviewKey, renderVoiceKeycap, type BuiltinIconName
 } from "./render.js";
 import { openCodexThread } from "./codex-open.js";
 import { agentPrimaryLabel } from "./project-label.js";
@@ -40,6 +40,9 @@ type ContextRingSettings = { showContextRings?: boolean };
 const USER_ICON_ROOT = join(codexDeckStateRoot(), "icons");
 const LOCAL_MOBILE_CONFIG = "mobile-local-relay-server.json";
 const RESET_HOLD_MS = 1_200;
+export const VOICE_PULSE_LEVELS = [0.22, 0.62, 1, 0.42] as const;
+export const VOICE_PULSE_DELAYS_MS = [70, 80, 90, 80] as const;
+const VOICE_PULSE_RATE_LIMIT_MS = 180;
 export class DeckController {
   private readonly microBridge: CodexMicroRendererBridge;
   private readonly agents = new Map<string, AgentRegistration>();
@@ -76,6 +79,8 @@ export class DeckController {
   private lastAgentSourceSignature = "";
   private lastHostHealthSignature = "";
   private showContextRings = true;
+  private readonly voicePulseTokens = new Map<string, symbol>();
+  private readonly voicePulseStartedAt = new Map<string, number>();
 
   constructor(private readonly runtime: DeckRuntime) {
     this.microBridge = new CodexMicroRendererBridge((message) => this.runtime.logger.info(message));
@@ -213,7 +218,25 @@ export class DeckController {
   }
 
   unregisterFixedAction(action: ActionIdentity): void {
+    this.voicePulseTokens.delete(action.id);
+    this.voicePulseStartedAt.delete(action.id);
     this.unregister(action, this.fixedActions);
+  }
+
+  pulseVoiceAction(action: ActionIdentity): void {
+    const registration = this.fixedActions.get(action.id);
+    if (!registration || registration.source.kind !== "builtin" || registration.source.name !== "voice") return;
+    const now = Date.now();
+    const previousStartedAt = this.voicePulseStartedAt.get(action.id) ?? 0;
+    const token = Symbol(action.id);
+    this.voicePulseTokens.set(action.id, token);
+    this.voicePulseStartedAt.set(action.id, now);
+    if (now - previousStartedAt < VOICE_PULSE_RATE_LIMIT_MS) {
+      void this.renderFixedAction(registration).catch((error) =>
+        this.runtime.logger.error(`Voice pulse fallback failed (${action.id}): ${String(error)}`));
+      return;
+    }
+    void this.runVoicePulse(registration, token);
   }
 
   registerHostToggle(action: DeckSurfaceAction): void {
@@ -335,6 +358,11 @@ export class DeckController {
 
   async runKeycap(keycapId: OfficialKeycapId): Promise<void> {
     await this.sendToTarget({ kind: "keycap", keycapId }, () => this.microBridge.runKeycap(keycapId));
+  }
+
+  async startM18VoiceConversation(): Promise<void> {
+    await this.microBridge.startVoiceConversation();
+    void this.refresh();
   }
 
   async runEnvironmentAction(slot: EnvironmentActionSlot): Promise<void> {
@@ -479,6 +507,26 @@ export class DeckController {
       ? renderBuiltinKeycap(registration.source.name, theme)
       : await this.keycapImage(registration.source.keycapId, theme);
     if (image) await this.setImage(registration.action, image, "", generation);
+  }
+
+  private async runVoicePulse(registration: FixedIconRegistration, token: symbol): Promise<void> {
+    const { action } = registration;
+    const generation = this.imageWriter.current(action.id);
+    const theme = this.targetSnapshot()?.theme ?? "dark";
+    try {
+      for (let index = 0; index < VOICE_PULSE_LEVELS.length; index += 1) {
+        if (this.voicePulseTokens.get(action.id) !== token || this.fixedActions.get(action.id) !== registration) return;
+        await this.setImage(action, renderVoiceKeycap(theme, VOICE_PULSE_LEVELS[index]), "", generation);
+        await wait(VOICE_PULSE_DELAYS_MS[index] ?? 0);
+      }
+    } catch (error) {
+      this.runtime.logger.error(`Voice pulse failed (${action.id}); restoring the static frame: ${String(error)}`);
+    } finally {
+      if (this.voicePulseTokens.get(action.id) !== token || this.fixedActions.get(action.id) !== registration) return;
+      this.voicePulseTokens.delete(action.id);
+      try { await this.renderFixedAction(registration); }
+      catch (error) { this.runtime.logger.error(`Voice pulse fallback failed (${action.id}): ${String(error)}`); }
+    }
   }
 
   private async renderHostToggle(action: DeckSurfaceAction): Promise<void> {
@@ -641,4 +689,8 @@ export class DeckController {
     this.keycapImages.set(cacheKey, pending);
     return pending;
   }
+}
+
+function wait(milliseconds: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }

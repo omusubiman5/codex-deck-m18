@@ -1,9 +1,10 @@
 import { build } from "esbuild";
-import { appendFile, copyFile, cp, mkdir } from "node:fs/promises";
+import { appendFile, copyFile, cp, mkdir, rm } from "node:fs/promises";
 import { resolve } from "node:path";
 import { writeDistributionLicenses } from "./distribution-licenses.mjs";
 
 const output = resolve("dist/m18");
+await rm(output, { recursive: true, force: true });
 await mkdir(output, { recursive: true });
 const buildResult = await build({
   entryPoints: [resolve("src/m18.ts")],
@@ -12,10 +13,18 @@ const buildResult = await build({
   platform: "node",
   format: "esm",
   target: "node20",
+  external: ["sharp"],
   metafile: true,
   sourcemap: true,
   banner: { js: "import { createRequire as __createRequire } from 'node:module'; const require = __createRequire(import.meta.url);" }
 });
+await mkdir(resolve(output, "node_modules/@img"), { recursive: true });
+for (const dependency of ["sharp", "detect-libc", "semver"]) {
+  await cp(resolve("node_modules", dependency), resolve(output, "node_modules", dependency), { recursive: true });
+}
+for (const dependency of ["colour", "sharp-win32-x64"]) {
+  await cp(resolve("node_modules/@img", dependency), resolve(output, "node_modules/@img", dependency), { recursive: true });
+}
 await writeDistributionLicenses(output, buildResult.metafile);
 await copyFile(resolve("m18-adapter/LICENSE"), resolve(output, "LICENSE.adapter-GPL-3.0"));
 await appendFile(

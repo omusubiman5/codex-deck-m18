@@ -54,11 +54,20 @@ export function createM18Binding(controller: DeckController, spec: M18ActionSpec
       return createRateLimitResetBinding(controller);
     case "keycap":
       if (spec.keycapId === "MIC") {
+        let registeredAction: Parameters<NonNullable<Binding["register"]>>[0] | undefined;
         return {
-          register: (action) => controller.registerFixedAction(spec.id, action, { kind: "local", keycapId: "MIC" }),
-          unregister: (action) => controller.unregisterFixedAction(action),
-          down: () => controller.sendMicroAction("ACT10_ACT11", 1),
-          up: () => controller.sendMicroAction("ACT10_ACT11", 0)
+          register: (action) => {
+            registeredAction = action;
+            controller.registerFixedAction(spec.id, action, { kind: "builtin", name: "voice" });
+          },
+          unregister: (action) => {
+            if (registeredAction?.id === action.id) registeredAction = undefined;
+            controller.unregisterFixedAction(action);
+          },
+          down: () => {
+            if (registeredAction) controller.pulseVoiceAction(registeredAction);
+            return controller.startM18VoiceConversation();
+          }
         };
       }
       return {
