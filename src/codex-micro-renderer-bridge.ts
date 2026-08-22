@@ -567,6 +567,17 @@ export class CodexMicroRendererBridge {
 
   async runEnvironmentAction(slot: EnvironmentActionSlot): Promise<void> {
     const command = environmentActionCommand(slot);
+    await this.runCodexCommand(command, "This Codex environment action is not active in the current view.");
+  }
+
+  async startVoiceConversation(): Promise<void> {
+    await this.runCodexCommand(
+      "composer.startVoiceMode",
+      "Voice chat is not available in the current Codex view or for this account."
+    );
+  }
+
+  private async runCodexCommand(command: string, inactiveMessage: string): Promise<void> {
     await this.ensureConnected();
     const expression = `(async () => {
       const urls = [...new Set([
@@ -622,7 +633,7 @@ export class CodexMicroRendererBridge {
       }
       if (typeof commandRunner !== 'function') throw new Error('Codex command runner is unavailable.');
       const handled = commandRunner(${JSON.stringify(command)}, 'codex_micro_hid');
-      if (!handled) throw new Error('This Codex environment action is not active in the current view.');
+      if (!handled) throw new Error(${JSON.stringify(inactiveMessage)});
       return true;
     })()`;
     try {

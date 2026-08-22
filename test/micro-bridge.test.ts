@@ -144,6 +144,22 @@ test("environment buttons use Codex Micro's native environment action command sl
   assert.match(source, /commandRunner\(\$\{JSON\.stringify\(command\)\}, 'codex_micro_hid'\)/);
 });
 
+test("M18 Voice Talk uses Codex's native voice command without replacing the public Dictation action", async () => {
+  const [bridge, bindings, manifestSource, readme] = await Promise.all([
+    readFile(new URL("../src/codex-micro-renderer-bridge.ts", import.meta.url), "utf8"),
+    readFile(new URL("../src/m18-action-bindings.ts", import.meta.url), "utf8"),
+    readFile(new URL("../static/manifest.json", import.meta.url), "utf8"),
+    readFile(new URL("../README.md", import.meta.url), "utf8")
+  ]);
+  const manifest = JSON.parse(manifestSource) as { Actions: Array<{ UUID: string; Name: string; Tooltip: string; PropertyInspectorPath?: string }> };
+  const dictation = manifest.Actions.find((action) => action.UUID === "com.simeo.codex-deck.dictation");
+  assert.match(bridge, /"composer\.startVoiceMode"/);
+  assert.match(bindings, /startM18VoiceConversation/);
+  assert.equal(dictation?.Name, "Action 5 \/ Push-to-talk");
+  assert.doesNotMatch(readme, /Configure-CodexDeckVoice|voice-shortcut\.json/i);
+  assert.doesNotMatch(readme, /VOICE TALK[^\n]*(?:開始・終了|start or stop)/i);
+});
+
 test("M18 bottom buttons select three scenes while preserving press ownership", async () => {
   const source = await readFile(new URL("../src/m18.ts", import.meta.url), "utf8");
   assert.match(source, /sceneSelectors/);
@@ -151,6 +167,7 @@ test("M18 bottom buttons select three scenes while preserving press ownership", 
   assert.match(source, /pressedBindings/);
   assert.match(source, /M18_SCENES/);
   assert.doesNotMatch(source, /environmentAction\(1\)/);
+  assert.match(source, /setBrightness\(100\)/);
 });
 
 test("manifest exposes both dedicated reasoning adjustment buttons", async () => {

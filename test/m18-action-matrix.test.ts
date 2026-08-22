@@ -54,8 +54,8 @@ function expectedDispatch(spec: M18ActionSpec, action: DeckSurfaceAction): Recor
     case "keycap":
       if (spec.keycapId === "MIC") {
         return [
-          { method: "sendMicroAction", args: ["ACT10_ACT11", 1] },
-          { method: "sendMicroAction", args: ["ACT10_ACT11", 0] }
+          { method: "pulseVoiceAction", args: [{ id: action.id }] },
+          { method: "startM18VoiceConversation", args: [] }
         ];
       }
       return [{ method: "runKeycap", args: [spec.keycapId] }];
@@ -93,12 +93,9 @@ test("all 30 official keycaps are ordinary single-press inputs", async () => {
     const binding = createM18Binding(recordingController(calls), spec);
     await binding.down();
     if (spec.keycapId === "MIC") {
-      assert.deepEqual(calls, [{ method: "sendMicroAction", args: ["ACT10_ACT11", 1] }], spec.keycapId);
+      assert.deepEqual(calls, [{ method: "startM18VoiceConversation", args: [] }], spec.keycapId);
       await binding.up?.();
-      assert.deepEqual(calls, [
-        { method: "sendMicroAction", args: ["ACT10_ACT11", 1] },
-        { method: "sendMicroAction", args: ["ACT10_ACT11", 0] }
-      ], spec.keycapId);
+      assert.deepEqual(calls, [{ method: "startM18VoiceConversation", args: [] }], `${spec.keycapId} key-up`);
     } else {
       assert.deepEqual(calls, [{ method: "runKeycap", args: [spec.keycapId] }], spec.keycapId);
       await binding.up?.();
