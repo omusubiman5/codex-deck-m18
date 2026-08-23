@@ -59,7 +59,7 @@ M18の15 LCDキーを3面で使い、必須45操作をすべて収容します�
 
 - M18の15個のLCDキーでCodex Microの主要操作を実行
 - 6つのCodexタスク状態をLCDへ同期表示
-- 直接接続構成ではM18専用の`VOICE TALK`からライブ音声会話を開始
+- 直接接続構成専用の`VOICE TALK`からライブ音声会話を開始
 - VSD Craft構成では同じ位置の既存`MIC`／Push-to-talk操作を維持
 - Plan、Back、Forwardに対応
 - M18のファームウェア、Codex Desktop本体、USBドライバーを改変しない

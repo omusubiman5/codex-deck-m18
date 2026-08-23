@@ -59,7 +59,7 @@ The M18 uses three scenes of 15 LCD keys to provide all 45 required operations.
 
 - Run primary Codex Micro operations from the M18's 15 LCD keys
 - Synchronize six Codex task states to the LCD
-- On the direct-connection path, start live voice conversation from the M18-only `VOICE TALK` key
+- On the direct-connection path, start a live voice conversation from the direct-connection-only `VOICE TALK` key
 - On the VSD Craft path, retain the existing `MIC` / Push-to-talk control in that position
 - Support Plan, Back, and Forward
 - Do not modify M18 firmware, Codex Desktop, or USB drivers
