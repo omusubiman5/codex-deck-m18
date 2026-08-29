@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import {
   REASONING_ENCODER_KEYS, environmentActionCommand, isCodexCommandRejection, resolveAgentDispatch,
-  retainEvaluationPromise, selectCodexMainTarget
+  isActiveVoiceTarget, retainEvaluationPromise, selectCodexMainTarget
 } from "../src/codex-micro-renderer-bridge.js";
 import { ADDITIONAL_KEYCAPS, OFFICIAL_KEYCAP_IDS } from "../src/keycaps.js";
 import { visualStatusFromMicro } from "../src/status.js";
@@ -84,6 +84,22 @@ test("renderer bridge rejects auxiliary-only renderer lists", () => {
   assert.equal(target, undefined);
 });
 
+test("voice activity detection is limited to current Codex voice surfaces", () => {
+  assert.equal(isActiveVoiceTarget({
+    type: "page",
+    url: "app://-/avatar-overlay-composition-surface.html?surfaceId=voice-microphone"
+  }), true);
+  assert.equal(isActiveVoiceTarget({
+    type: "iframe",
+    url: "app://-/avatar-overlay-composition-surface.html?surfaceId=realtime-caption"
+  }), true);
+  assert.equal(isActiveVoiceTarget({
+    type: "page",
+    url: "app://-/avatar-overlay-composition-surface.html?surfaceId=mascot-badge"
+  }), false);
+  assert.equal(isActiveVoiceTarget({ type: "page", url: "app://-/index.html" }), false);
+});
+
 test("renderer evaluations retain their awaited promise until CDP has collected the result", () => {
   const expression = retainEvaluationPromise("(async () => true)()", 17);
   assert.match(expression, /__codexDeckPendingEvaluations/);
@@ -154,6 +170,8 @@ test("M18 Voice Talk uses Codex's native voice command without replacing the pub
   const manifest = JSON.parse(manifestSource) as { Actions: Array<{ UUID: string; Name: string; Tooltip: string; PropertyInspectorPath?: string }> };
   const dictation = manifest.Actions.find((action) => action.UUID === "com.simeo.codex-deck.dictation");
   assert.match(bridge, /"composer\.startVoiceMode"/);
+  assert.match(bridge, /VoiceStartGate/);
+  assert.match(bridge, /targets\.some\(isActiveVoiceTarget\)/);
   assert.match(bindings, /startM18VoiceConversation/);
   assert.equal(dictation?.Name, "Action 5 \/ Push-to-talk");
   assert.doesNotMatch(readme, /Configure-CodexDeckVoice|voice-shortcut\.json/i);
@@ -202,7 +220,14 @@ test("standalone keycaps resolve Codex's live registry instead of hardcoding com
   assert.match(source, /\\\\w/);
   assert.match(source, /import\\\\s/);
   assert.match(source, /codex_micro_hid/);
-  assert.match(source, /if \(!isCodexCommandRejection\(error\)\) this\.disconnect\(\)/);
+  assert.match(source, /!isCodexCommandRejection\(error\)[^\n]+this\.disconnect\(\)/);
+});
+
+test("snapshot reads are cached and lower priority than commands", async () => {
+  const source = await readFile(new URL("../src/codex-micro-renderer-bridge.ts", import.meta.url), "utf8");
+  assert.match(source, /Symbol\.for\('codex-deck-snapshot-runtime-v1'\)/);
+  assert.match(source, /evaluate<MicroSnapshot>\(SNAPSHOT_EXPRESSION, "snapshot"\)/);
+  assert.match(source, /PrioritySerialQueue/);
 });
 
 test("Codex key surfaces always use live Micro rendering instead of packaged artwork", async () => {

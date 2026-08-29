@@ -12,6 +12,7 @@ function recordingController(calls: RecordedCall[]): DeckController {
   return new Proxy({}, {
     get: (_target, property) => (...args: unknown[]) => {
       calls.push({ method: String(property), args: args.map(normalizeArgument) });
+      if (property === "startM18VoiceConversation") return Promise.resolve("started");
       return Promise.resolve(property === "finishRateLimitReset");
     }
   }) as DeckController;
@@ -54,8 +55,8 @@ function expectedDispatch(spec: M18ActionSpec, action: DeckSurfaceAction): Recor
     case "keycap":
       if (spec.keycapId === "MIC") {
         return [
-          { method: "pulseVoiceAction", args: [{ id: action.id }] },
-          { method: "startM18VoiceConversation", args: [] }
+          { method: "startM18VoiceConversation", args: [] },
+          { method: "pulseVoiceAction", args: [{ id: action.id }] }
         ];
       }
       return [{ method: "runKeycap", args: [spec.keycapId] }];
@@ -102,4 +103,40 @@ test("all 30 official keycaps are ordinary single-press inputs", async () => {
       assert.deepEqual(calls, [{ method: "runKeycap", args: [spec.keycapId] }], `${spec.keycapId} key-up`);
     }
   }
+});
+
+test("M18 Voice feedback reflects command outcome", async () => {
+  const action: DeckSurfaceAction = { id: "voice-outcome", setImage: async () => {}, setTitle: async () => {} };
+  const voiceSpec = M18_ACTION_CATALOG.find((spec) => spec.kind === "keycap" && spec.keycapId === "MIC")!;
+
+  const suppressedCalls: RecordedCall[] = [];
+  const suppressedController = new Proxy({}, {
+    get: (_target, property) => (...args: unknown[]) => {
+      suppressedCalls.push({ method: String(property), args: args.map(normalizeArgument) });
+      return property === "startM18VoiceConversation" ? Promise.resolve("suppressed") : undefined;
+    }
+  }) as DeckController;
+  const suppressed = createM18Binding(suppressedController, voiceSpec);
+  suppressed.register?.(action);
+  suppressedCalls.length = 0;
+  await suppressed.down();
+  assert.deepEqual(suppressedCalls, [{ method: "startM18VoiceConversation", args: [] }]);
+
+  const failedCalls: RecordedCall[] = [];
+  const failedController = new Proxy({}, {
+    get: (_target, property) => (...args: unknown[]) => {
+      failedCalls.push({ method: String(property), args: args.map(normalizeArgument) });
+      return property === "startM18VoiceConversation"
+        ? Promise.reject(new Error("voice unavailable"))
+        : undefined;
+    }
+  }) as DeckController;
+  const failed = createM18Binding(failedController, voiceSpec);
+  failed.register?.(action);
+  failedCalls.length = 0;
+  await assert.rejects(failed.down(), /voice unavailable/);
+  assert.deepEqual(failedCalls, [
+    { method: "startM18VoiceConversation", args: [] },
+    { method: "indicateVoiceFailure", args: [{ id: action.id }] }
+  ]);
 });

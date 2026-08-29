@@ -7,13 +7,16 @@ import {
 } from "./control-target.js";
 import { CodexRelayClient, readRelayClientConfig } from "./codex-relay-client.js";
 import { CodexRelayServer, readRelayServerConfig } from "./codex-relay-server.js";
-import { CodexMicroRendererBridge, type EnvironmentActionSlot } from "./codex-micro-renderer-bridge.js";
+import {
+  CodexMicroRendererBridge, type EnvironmentActionSlot, type VoiceConversationStartResult
+} from "./codex-micro-renderer-bridge.js";
 import { getOrCreateHostIdentity } from "./host-identity.js";
 import type { OfficialKeycapId } from "./keycaps.js";
 import { HostActivityIndex, type HostSnapshot, type RelayCommand } from "./relay-protocol.js";
 import {
   renderAgentKey, renderBuiltinKeycap, renderFallbackKeycap, renderHostTargetKey, renderImportedKeycap,
-  renderRateLimitResetKey, renderUsageLimitKey, renderUsageOverviewKey, renderVoiceKeycap, type BuiltinIconName
+  renderRateLimitResetKey, renderUsageLimitKey, renderUsageOverviewKey, renderVoiceErrorKeycap, renderVoiceKeycap,
+  type BuiltinIconName
 } from "./render.js";
 import { openCodexThread } from "./codex-open.js";
 import { agentPrimaryLabel } from "./project-label.js";
@@ -239,6 +242,14 @@ export class DeckController {
     void this.runVoicePulse(registration, token);
   }
 
+  indicateVoiceFailure(action: ActionIdentity): void {
+    const registration = this.fixedActions.get(action.id);
+    if (!registration || registration.source.kind !== "builtin" || registration.source.name !== "voice") return;
+    const token = Symbol(action.id);
+    this.voicePulseTokens.set(action.id, token);
+    void this.runVoiceFailure(registration, token);
+  }
+
   registerHostToggle(action: DeckSurfaceAction): void {
     this.imageWriter.register(action.id);
     this.hostToggleActions.set(action.id, action);
@@ -360,9 +371,10 @@ export class DeckController {
     await this.sendToTarget({ kind: "keycap", keycapId }, () => this.microBridge.runKeycap(keycapId));
   }
 
-  async startM18VoiceConversation(): Promise<void> {
-    await this.microBridge.startVoiceConversation();
-    void this.refresh();
+  async startM18VoiceConversation(): Promise<VoiceConversationStartResult> {
+    const result = await this.microBridge.startVoiceConversation();
+    if (result === "started") void this.refresh();
+    return result;
   }
 
   async runEnvironmentAction(slot: EnvironmentActionSlot): Promise<void> {
@@ -526,6 +538,23 @@ export class DeckController {
       this.voicePulseTokens.delete(action.id);
       try { await this.renderFixedAction(registration); }
       catch (error) { this.runtime.logger.error(`Voice pulse fallback failed (${action.id}): ${String(error)}`); }
+    }
+  }
+
+  private async runVoiceFailure(registration: FixedIconRegistration, token: symbol): Promise<void> {
+    const { action } = registration;
+    const generation = this.imageWriter.current(action.id);
+    const theme = this.targetSnapshot()?.theme ?? "dark";
+    try {
+      await this.setImage(action, renderVoiceErrorKeycap(theme), "", generation);
+      await wait(900);
+    } catch (error) {
+      this.runtime.logger.error(`Voice failure feedback failed (${action.id}): ${String(error)}`);
+    } finally {
+      if (this.voicePulseTokens.get(action.id) !== token || this.fixedActions.get(action.id) !== registration) return;
+      this.voicePulseTokens.delete(action.id);
+      try { await this.renderFixedAction(registration); }
+      catch (error) { this.runtime.logger.error(`Voice failure fallback failed (${action.id}): ${String(error)}`); }
     }
   }
 

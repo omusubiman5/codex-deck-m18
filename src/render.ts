@@ -170,6 +170,17 @@ export function renderVoiceKeycap(theme: ThemeMode = "light", pulse = 0): string
   </svg>`);
 }
 
+export function renderVoiceErrorKeycap(theme: ThemeMode = "light"): string {
+  const surface = SURFACES[theme];
+  return toDataUrl(`<svg xmlns="http://www.w3.org/2000/svg" width="144" height="144" viewBox="0 0 144 144">
+    <defs><linearGradient id="keycap" x1="0" y1="0" x2="0" y2="1"><stop stop-color="${surface.keyTop}"/><stop offset=".52" stop-color="${surface.keyMiddle}"/><stop offset="1" stop-color="${surface.keyBottom}"/></linearGradient></defs>
+    <rect data-theme="${theme}" x="4" y="4" width="136" height="136" rx="18" fill="url(#keycap)" stroke="${surface.border}" stroke-width="2" stroke-opacity="${theme === "dark" ? ".88" : ".34"}"/>
+    <rect data-voice-error="true" x="7.5" y="7.5" width="129" height="129" rx="15" fill="${CODEX_MICRO_COLORS.error}" fill-opacity=".88" stroke="#FFFFFF" stroke-width="4" stroke-opacity=".92"/>
+    <text data-icon-source="fallback-label" x="72" y="70" text-anchor="middle" font-family="Bahnschrift, Segoe UI Variable Display, Segoe UI, Arial, sans-serif" font-size="17" font-weight="700" letter-spacing="1.1" fill="#FFFFFF">VOICE TALK</text>
+    <text x="72" y="94" text-anchor="middle" font-family="Bahnschrift, Segoe UI, Arial, sans-serif" font-size="14" font-weight="700" fill="#FFFFFF">RETRY</text>
+  </svg>`);
+}
+
 export function renderFallbackKeycap(keycapId: string, theme: ThemeMode = "light"): string {
   const surface = SURFACES[theme];
   const label = escapeXml(keycapId);

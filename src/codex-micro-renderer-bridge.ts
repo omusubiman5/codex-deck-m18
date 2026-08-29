@@ -6,8 +6,12 @@ import { promisify } from "node:util";
 import WebSocket from "ws";
 import { codexDeckStateRoot } from "./codex-deck-paths.js";
 import { OFFICIAL_KEYCAP_IDS, type OfficialKeycapId } from "./keycaps.js";
+import { PrioritySerialQueue, type TaskPriority } from "./priority-serial-queue.js";
 import { CodexSessionOwnershipIndex } from "./session-ownership.js";
 import type { MicroActionSlot, MicroDirection, MicroSnapshot, ReasoningAdjustment } from "./types.js";
+import { VoiceStartGate, type VoiceConversationStartResult } from "./voice-start-gate.js";
+
+export type { VoiceConversationStartResult } from "./voice-start-gate.js";
 
 type DebugTarget = {
   type: string;
@@ -30,6 +34,15 @@ export function selectCodexMainTarget(targets: DebugTarget[]): DebugTarget | und
     ?? candidates.find(isIndexDocument)
     ?? candidates.find((target) => !isAuxiliarySurface(target) && !target.url.includes("initialRoute="))
     ?? candidates.find((target) => !isAuxiliarySurface(target));
+}
+
+export function isActiveVoiceTarget(target: Pick<DebugTarget, "type" | "url">): boolean {
+  if (target.type !== "page" && target.type !== "iframe") return false;
+  try {
+    const url = new URL(target.url);
+    return /avatar-overlay-composition-surface\.html$/i.test(url.pathname) &&
+      /^(?:voice-(?:microphone|controls|output|status)|realtime-(?:voice|caption))$/i.test(url.searchParams.get("surfaceId") ?? "");
+  } catch { return false; }
 }
 
 type CdpResponse = {
@@ -69,7 +82,6 @@ export const REASONING_ENCODER_KEYS: Record<ReasoningAdjustment, "ENC_CW" | "ENC
 };
 
 export type EnvironmentActionSlot = 1 | 2 | 3;
-
 export function environmentActionCommand(slot: EnvironmentActionSlot): `environmentAction${EnvironmentActionSlot}` {
   if (!Number.isInteger(slot) || slot < 1 || slot > 3) throw new Error(`Unknown Codex environment action slot: ${slot}`);
   return `environmentAction${slot}`;
@@ -89,27 +101,41 @@ export function isCodexCommandRejection(error: unknown): boolean {
 }
 
 const SNAPSHOT_EXPRESSION = `(async () => {
-  const urls = [...new Set([
-    ...[...document.querySelectorAll('link[href], script[src]')].map((element) => element.href || element.src),
-    ...performance.getEntriesByType('resource').map((entry) => entry.name)
-  ])].filter((url) => url.includes('/assets/') && url.endsWith('.js'));
-  const slotSignalsUrl = urls.find((url) => url.includes('/assets/codex-micro-slot-signals-'));
-  if (!slotSignalsUrl) throw new Error('Codex Micro slot signals are not loaded.');
+  const runtimeKey = Symbol.for('codex-deck-snapshot-runtime-v1');
+  let runtime = globalThis[runtimeKey];
+  if (!runtime) {
+    const urls = [...new Set([
+      ...[...document.querySelectorAll('link[href], script[src]')].map((element) => element.href || element.src),
+      ...performance.getEntriesByType('resource').map((entry) => entry.name)
+    ])].filter((url) => url.includes('/assets/') && url.endsWith('.js'));
+    const slotSignalsUrl = urls.find((url) => url.includes('/assets/codex-micro-slot-signals-'));
+    if (!slotSignalsUrl) throw new Error('Codex Micro slot signals are not loaded.');
 
-  const namespaces = [];
-  for (const url of urls) {
-    try { namespaces.push(await import(url)); } catch {}
+    const namespaces = [];
+    for (const url of urls) {
+      try { namespaces.push(await import(url)); } catch {}
+    }
+    const exportedValues = namespaces.flatMap((namespace) => Object.values(namespace));
+    const definitions = exportedValues.find((candidate) =>
+      candidate && typeof candidate === 'object' &&
+      candidate.layout?.key === 'codex-micro-layout' &&
+      candidate.agentSource?.key === 'codex-micro-agent-source'
+    );
+    if (!definitions) throw new Error('Codex Micro settings definitions were not found.');
+
+    const bus = exportedValues.find((candidate) => candidate && typeof candidate === 'object' && candidate.handlers instanceof Map && (typeof candidate.dispatchHostMessage === 'function' || typeof candidate.dispatchMessage === 'function'));
+    if (!bus) throw new Error('Codex VS Code event bus was not found.');
+    const slotSignals = await import(slotSignalsUrl);
+    const resolvers = Object.values(slotSignals).filter((candidate) =>
+      candidate && typeof candidate === 'object' &&
+      typeof candidate.resolve === 'function' &&
+      typeof candidate.createSubscriberAtom === 'function'
+    );
+    if (resolvers.length === 0) throw new Error('Codex Micro slot resolver was not found.');
+    runtime = { exportedValues, definitions, bus, resolvers };
+    globalThis[runtimeKey] = runtime;
   }
-  const exportedValues = namespaces.flatMap((namespace) => Object.values(namespace));
-  const definitions = exportedValues.find((candidate) =>
-    candidate && typeof candidate === 'object' &&
-    candidate.layout?.key === 'codex-micro-layout' &&
-    candidate.agentSource?.key === 'codex-micro-agent-source'
-  );
-  if (!definitions) throw new Error('Codex Micro settings definitions were not found.');
-
-  const bus = exportedValues.find((candidate) => candidate && typeof candidate === 'object' && candidate.handlers instanceof Map && (typeof candidate.dispatchHostMessage === 'function' || typeof candidate.dispatchMessage === 'function'));
-  if (!bus) throw new Error('Codex VS Code event bus was not found.');
+  const { exportedValues, definitions, bus, resolvers } = runtime;
   const dispatch = bus.dispatchHostMessage ?? bus.dispatchMessage;
   if ((bus.handlers.get('codex-micro-hid-event')?.size ?? 0) === 0) {
     dispatch.call(bus, ${JSON.stringify(DEVICE_STATE)});
@@ -117,14 +143,6 @@ const SNAPSHOT_EXPRESSION = `(async () => {
   const root = document.getElementById('root');
   const reactKey = root && Object.getOwnPropertyNames(root).find((key) => key.startsWith('__reactContainer$'));
   if (!root || !reactKey) throw new Error('Codex React root was not found.');
-
-  const slotSignals = await import(slotSignalsUrl);
-  const resolvers = Object.values(slotSignals).filter((candidate) =>
-    candidate && typeof candidate === 'object' &&
-    typeof candidate.resolve === 'function' &&
-    typeof candidate.createSubscriberAtom === 'function'
-  );
-  if (resolvers.length === 0) throw new Error('Codex Micro slot resolver was not found.');
 
   let queue = [root[reactKey]];
   const seen = new Set();
@@ -373,13 +391,15 @@ export class CodexMicroRendererBridge {
   private lastSnapshot?: MicroSnapshot;
   private readonly sessionOwnership = new CodexSessionOwnershipIndex();
   private readonly evaluationNamespace = randomUUID();
+  private readonly evaluationQueue = new PrioritySerialQueue();
+  private readonly voiceStartGate = new VoiceStartGate();
+  private closed = false;
 
   constructor(private readonly log: (message: string) => void) {}
 
   async refresh(): Promise<MicroSnapshot> {
     try {
-      await this.ensureConnected();
-      const nativeSnapshot = await this.evaluate<MicroSnapshot>(SNAPSHOT_EXPRESSION);
+      const nativeSnapshot = await this.evaluate<MicroSnapshot>(SNAPSHOT_EXPRESSION, "snapshot");
       const snapshot = await this.sessionOwnership.annotate(nativeSnapshot);
       this.lastSnapshot = snapshot;
       return snapshot;
@@ -470,7 +490,6 @@ export class CodexMicroRendererBridge {
 
   async runKeycap(keycapId: OfficialKeycapId): Promise<void> {
     if (!OFFICIAL_KEYCAP_IDS.includes(keycapId)) throw new Error(`Unknown Codex Micro keycap: ${keycapId}`);
-    await this.ensureConnected();
     const expression = `(async () => {
       const urls = [...new Set([
         ...[...document.querySelectorAll('link[href], script[src]')].map((element) => element.href || element.src),
@@ -570,15 +589,22 @@ export class CodexMicroRendererBridge {
     await this.runCodexCommand(command, "This Codex environment action is not active in the current view.");
   }
 
-  async startVoiceConversation(): Promise<void> {
+  async startVoiceConversation(): Promise<VoiceConversationStartResult> {
+    return await this.voiceStartGate.run(() => this.startVoiceConversationOnce());
+  }
+
+  private async startVoiceConversationOnce(): Promise<VoiceConversationStartResult> {
+    const port = await discoverDebugPort();
+    const targets = await fetchJson<DebugTarget[]>(`http://127.0.0.1:${port}/json/list`);
+    if (targets.some(isActiveVoiceTarget)) return "already-active";
     await this.runCodexCommand(
       "composer.startVoiceMode",
       "Voice chat is not available in the current Codex view or for this account."
     );
+    return "started";
   }
 
   private async runCodexCommand(command: string, inactiveMessage: string): Promise<void> {
-    await this.ensureConnected();
     const expression = `(async () => {
       const urls = [...new Set([
         ...[...document.querySelectorAll('link[href], script[src]')].map((element) => element.href || element.src),
@@ -639,13 +665,12 @@ export class CodexMicroRendererBridge {
     try {
       await this.evaluate(expression);
     } catch (error) {
-      this.disconnect();
+      if (!isCodexCommandRejection(error) && !String(error).includes(inactiveMessage)) this.disconnect();
       throw error;
     }
   }
 
   async consumeRateLimitReset(): Promise<void> {
-    await this.ensureConnected();
     const redeemRequestId = randomUUID();
     const expression = `(async () => {
       const urls = [...new Set([
@@ -717,11 +742,12 @@ export class CodexMicroRendererBridge {
   }
 
   close(): void {
+    this.closed = true;
+    this.evaluationQueue.close(new Error("Codex-Micro-Brücke wurde geschlossen."));
     this.disconnect();
   }
 
   private async dispatch(type: string, payload: object, requiredHandler: string): Promise<void> {
-    await this.ensureConnected();
     const message = { type, ...payload };
     const expression = `(async () => {
       const urls = [...new Set([
@@ -758,6 +784,7 @@ export class CodexMicroRendererBridge {
   }
 
   private async ensureConnected(): Promise<void> {
+    if (this.closed) throw new Error("Codex-Micro-Brücke wurde geschlossen.");
     if (this.socket?.readyState === WebSocket.OPEN) return;
     if (this.connecting) return this.connecting;
     this.connecting = this.connect();
@@ -784,7 +811,18 @@ export class CodexMicroRendererBridge {
     this.log(`Native Codex-Micro-Brücke verbunden (Port ${port}, ${target.url}).`);
   }
 
-  private evaluate<T = unknown>(expression: string): Promise<T> {
+  private evaluate<T = unknown>(expression: string, priority: TaskPriority = "command"): Promise<T> {
+    return this.evaluationQueue.run(priority, async () => {
+      try { await this.ensureConnected(); }
+      catch {
+        this.disconnect();
+        await this.ensureConnected();
+      }
+      return await this.evaluateConnected<T>(expression);
+    });
+  }
+
+  private evaluateConnected<T = unknown>(expression: string): Promise<T> {
     const socket = this.socket;
     if (!socket || socket.readyState !== WebSocket.OPEN) return Promise.reject(new Error("Codex-Micro-Brücke ist nicht verbunden."));
     const id = ++this.nextId;

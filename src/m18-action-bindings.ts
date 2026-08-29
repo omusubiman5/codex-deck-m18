@@ -64,9 +64,14 @@ export function createM18Binding(controller: DeckController, spec: M18ActionSpec
             if (registeredAction?.id === action.id) registeredAction = undefined;
             controller.unregisterFixedAction(action);
           },
-          down: () => {
-            if (registeredAction) controller.pulseVoiceAction(registeredAction);
-            return controller.startM18VoiceConversation();
+          down: async () => {
+            try {
+              const result = await controller.startM18VoiceConversation();
+              if (result === "started" && registeredAction) controller.pulseVoiceAction(registeredAction);
+            } catch (error) {
+              if (registeredAction) controller.indicateVoiceFailure(registeredAction);
+              throw error;
+            }
           }
         };
       }

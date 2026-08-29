@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
-import { CODEX_MICRO_COLORS, renderAgentSvg, renderBuiltinKeycap, renderFallbackKeycap, renderHostTargetKey, renderImportedKeycap, renderVoiceKeycap, SIGNAL_COLORS } from "../src/render.js";
+import { CODEX_MICRO_COLORS, renderAgentSvg, renderBuiltinKeycap, renderFallbackKeycap, renderHostTargetKey, renderImportedKeycap, renderVoiceErrorKeycap, renderVoiceKeycap, SIGNAL_COLORS } from "../src/render.js";
 
 test("agent status colors match the instructed Codex Micro semantics", () => {
   const expected = {
@@ -106,6 +106,14 @@ test("Voice pulse preserves the fallback design and returns to the static key", 
   assert.match(pulse, />VOICE TALK<\/text>/);
   assert.doesNotMatch(pulse, /codex-deck-original/);
   assert.equal(renderVoiceKeycap("dark", 0), renderFallbackKeycap("VOICE TALK", "dark"));
+});
+
+test("Voice failures have a bounded, explicit retry display", () => {
+  const output = decodeURIComponent(renderVoiceErrorKeycap("dark").replace(/^data:image\/svg\+xml;charset=utf8,/, ""));
+  assert.match(output, /data-voice-error="true"/);
+  assert.match(output, />VOICE TALK<\/text>/);
+  assert.match(output, />RETRY<\/text>/);
+  assert.match(output, new RegExp(CODEX_MICRO_COLORS.error, "i"));
 });
 
 test("renderer snapshot derives a theme without a versioned asset hash", async () => {
