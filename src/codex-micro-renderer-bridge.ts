@@ -45,6 +45,15 @@ export function isActiveVoiceTarget(target: Pick<DebugTarget, "type" | "url">): 
   } catch { return false; }
 }
 
+export function isVoiceOverlayTarget(target: Pick<DebugTarget, "type" | "url" | "webSocketDebuggerUrl">): boolean {
+  if (target.type !== "page" || !target.webSocketDebuggerUrl) return false;
+  try {
+    const url = new URL(target.url);
+    return url.protocol === "app:" && url.pathname === "/index.html" &&
+      url.searchParams.get("initialRoute") === "/avatar-overlay";
+  } catch { return false; }
+}
+
 type CdpResponse = {
   id?: number;
   result?: { result?: { value?: unknown; description?: string }; exceptionDetails?: { text?: string; exception?: { description?: string } } };
@@ -597,6 +606,8 @@ export class CodexMicroRendererBridge {
     const port = await discoverDebugPort();
     const targets = await fetchJson<DebugTarget[]>(`http://127.0.0.1:${port}/json/list`);
     if (targets.some(isActiveVoiceTarget)) return "already-active";
+    const overlay = targets.find(isVoiceOverlayTarget);
+    if (overlay?.webSocketDebuggerUrl && await hasActiveVoiceOverlay(overlay.webSocketDebuggerUrl)) return "already-active";
     await this.runCodexCommand(
       "composer.startVoiceMode",
       "Voice chat is not available in the current Codex view or for this account."
@@ -871,6 +882,55 @@ export class CodexMicroRendererBridge {
       reject(new Error("Codex-Micro-Brücke wurde getrennt."));
     }
     this.pending.clear();
+  }
+}
+
+async function hasActiveVoiceOverlay(webSocketDebuggerUrl: string): Promise<boolean> {
+  const socket = new WebSocket(webSocketDebuggerUrl);
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error("Timed out while inspecting the Codex Voice phase.")), 3_000);
+      socket.once("open", () => { clearTimeout(timer); resolve(); });
+      socket.once("error", (error) => { clearTimeout(timer); reject(error); });
+    });
+    return await new Promise<boolean>((resolve, reject) => {
+      const timer = setTimeout(() => settle(() => reject(new Error("Timed out while reading the Codex Voice phase."))), 3_000);
+      const finish = (operation: () => void): void => {
+        clearTimeout(timer);
+        socket.off("message", onMessage);
+        socket.off("error", onError);
+        socket.off("close", onClose);
+        operation();
+      };
+      const settle = finish;
+      const onMessage = (raw: WebSocket.RawData): void => {
+        let response: CdpResponse;
+        try { response = JSON.parse(String(raw)) as CdpResponse; }
+        catch { return finish(() => reject(new Error("Codex Voice phase returned invalid CDP data."))); }
+        if (response.id !== 1) return;
+        if (response.error) return finish(() => reject(new Error(response.error?.message ?? "Codex Voice phase inspection failed.")));
+        if (response.result?.exceptionDetails) {
+          return finish(() => reject(new Error(response.result?.exceptionDetails?.exception?.description ?? "Codex Voice phase inspection failed.")));
+        }
+        finish(() => resolve(response.result?.result?.value === true));
+      };
+      const onError = (error: Error): void => finish(() => reject(error));
+      const onClose = (): void => finish(() => reject(new Error("Codex Voice overlay closed during phase inspection.")));
+      socket.on("message", onMessage);
+      socket.once("error", onError);
+      socket.once("close", onClose);
+      socket.send(JSON.stringify({
+        id: 1,
+        method: "Runtime.evaluate",
+        params: {
+          expression: `!!document.querySelector('[data-testid="avatar-overlay-voice-orb"]')`,
+          returnByValue: true
+        }
+      }));
+    });
+  } finally {
+    if (socket.readyState === WebSocket.OPEN) socket.close();
+    else if (socket.readyState === WebSocket.CONNECTING) socket.terminate();
   }
 }
 

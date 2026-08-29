@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import {
   REASONING_ENCODER_KEYS, environmentActionCommand, isCodexCommandRejection, resolveAgentDispatch,
-  isActiveVoiceTarget, retainEvaluationPromise, selectCodexMainTarget
+  isActiveVoiceTarget, isVoiceOverlayTarget, retainEvaluationPromise, selectCodexMainTarget
 } from "../src/codex-micro-renderer-bridge.js";
 import { ADDITIONAL_KEYCAPS, OFFICIAL_KEYCAP_IDS } from "../src/keycaps.js";
 import { visualStatusFromMicro } from "../src/status.js";
@@ -98,6 +98,16 @@ test("voice activity detection is limited to current Codex voice surfaces", () =
     url: "app://-/avatar-overlay-composition-surface.html?surfaceId=mascot-badge"
   }), false);
   assert.equal(isActiveVoiceTarget({ type: "page", url: "app://-/index.html" }), false);
+  assert.equal(isVoiceOverlayTarget({
+    type: "page",
+    url: "app://-/index.html?initialRoute=%2Favatar-overlay",
+    webSocketDebuggerUrl: "ws://overlay"
+  }), true);
+  assert.equal(isVoiceOverlayTarget({
+    type: "page",
+    url: "app://-/index.html",
+    webSocketDebuggerUrl: "ws://main"
+  }), false);
 });
 
 test("renderer evaluations retain their awaited promise until CDP has collected the result", () => {
@@ -172,6 +182,7 @@ test("M18 Voice Talk uses Codex's native voice command without replacing the pub
   assert.match(bridge, /"composer\.startVoiceMode"/);
   assert.match(bridge, /VoiceStartGate/);
   assert.match(bridge, /targets\.some\(isActiveVoiceTarget\)/);
+  assert.match(bridge, /avatar-overlay-voice-orb/);
   assert.match(bindings, /startM18VoiceConversation/);
   assert.equal(dictation?.Name, "Action 5 \/ Push-to-talk");
   assert.doesNotMatch(readme, /Configure-CodexDeckVoice|voice-shortcut\.json/i);
