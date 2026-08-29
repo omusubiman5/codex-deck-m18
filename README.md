@@ -14,7 +14,7 @@ VSD Inside M18を、Windows版またはmacOS版Codex Desktopの**Codex Micro操�
 上流の[Codex Deck](https://github.com/dazer1234/codex-stream-deck)が持つCodex Micro接続・状態取得・描画・イベント送信機能は、どちらの方式でも維持しています。推奨構成では、M18のUSB通信、LCD転送、シーン管理をVSD Craftへ任せます。Linuxは対象外です。
 
 > [!IMPORTANT]
-> OpenAI、Codex Deck、M18メーカーによる公式製品ではありません。Codex Desktopの非公開内部インターフェースを利用するため、Codexの更新後に追従修正が必要になる可能性があります。現在の互換性確認対象はCodex Desktop 26.814.5167.0、VSD Craft 3.10.188.226です。live再試験は未完了であり、動作確認済みとは扱いません（[調査記録](docs/vsd-craft/原因調査.md)、[テスト結果](docs/codex-micro-m18/テスト結果V1.md)）。
+> OpenAI、Codex Deck、M18メーカーによる公式製品ではありません。Codex Desktopの非公開内部インターフェースを利用するため、Codexの更新後に追従修正が必要になる可能性があります。M18直接接続はCodex Desktop 26.820.10647.0とHOTSPOTEKUSB HID DEMO（`0x5548:0x1000`）で2026-08-29にlive確認済みです。VSD Craftの互換性確認対象は3.10.188.226ですが、VSD Craft経路の最新live再試験は別扱いです（[V6実装報告](docs/codex-micro-m18/実装報告書V6.md)、[VSD Craft調査記録](docs/vsd-craft/原因調査.md)）。
 
 ---
 
@@ -93,7 +93,9 @@ VSD Craft運用時のUSB通信はVSD Craftが行います。上記のUSB IDに�
 
 直接接続構成のシーン2上段右端にある`VOICE TALK`は、ChatGPT/Codexデスクトップのライブ音声会話を開始するM18専用キーです。通常のDictation／Push-to-talkや、一般のCodex Micro／Stream Deck公開アクションではありません。単押しでCodexのネイティブな`composer.startVoiceMode`コマンドを直接呼ぶため、デック側のショートカット設定は不要です。VSD Craft構成ではこの置換を行わず、同じ位置は既存の`MIC`／Push-to-talkです。
 
-押下時だけ、既存のCodex Micro `active`状態色（紫）へ明るくなって戻る約320ms・4フレームのone-shot表示を行います。常時ループはせず、重複押下を制限し、失敗時は静止表示へ戻ります。M18へ送る静止画とアニメーションフレームは、すべて64×64の不透明PNGへ事前変換されます。
+このキーはstart-onlyです。Codexが既に音声会話中または再開可能なphaseならno-opとなり、会話状態を変更しません。並行要求はsingle-flight化され、成功後5秒のsettling中も再送しません。現行Codexでは`avatar-overlay` rendererのVoice orbを読み取ってphaseを判定し、旧構成向けの独立Voice surface判定も残しています。
+
+紫の約320ms・4フレームone-shot表示は、新しい開始commandが成功した場合だけ出ます。active／抑止時は表示を変えず、失敗時は赤い`RETRY`を約900ms表示して静止画へ戻ります。M18へ送る全フレームは64×64の不透明PNGです。実機試験では11.84秒後を含む再押下でも追加command、追加pulse、意図しない状態変更が0件でした。
 
 公式キー群には独自の「危険キー」分類を設けていません。`APPR`、`REJ`、`DEL`、`PLAY`を含む各キーは通常の単押しで使用できます。`DEL`は現行実装ではチャットのアーカイブです。`PLAY`は先頭に設定されたEnvironment Actionを呼び出します。`GIT`、`MRG`、`PR`は各フローまたはレビュー画面を開くキーであり、キーを押しただけでcommit、merge、PR公開を確定するものではありません。
 
@@ -302,21 +304,24 @@ powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -F
 
 watcherはランタイム終了後に再起動を試み、CodexやM18の再接続に追従します。配置後にフォルダを移動すると起動パスが無効になるため、先に固定配置してください。
 
+連続起動失敗時は5秒から最大60秒まで段階的に待機し、安定稼働後に5秒へ戻ります。adapter commandは5秒でtimeoutし、応答停止またはUSB切断時はruntimeを停止してwatcherの再接続へ移ります。Codex CDP評価は直列化され、入力commandを定期snapshotより優先します。
+
 ### ログ
 
 | ファイル | 内容 |
 |---|---|
 | watcherスクリプトを置いたフォルダの**親**に生成される`m18.log` | watcher、Codex接続、M18接続、描画同期 |
 | `%LOCALAPPDATA%\CodexDeck\m18-events.log` | `key_down` / `key_up`と物理キー番号 |
+| `%LOCALAPPDATA%\CodexDeck\m18-frames.log` | LCD frameの時刻、scene、key、SHA-256 |
 | `%LOCALAPPDATA%\CodexDeck\codex-micro-bridge.json` | 現在のローカルCDPポート状態 |
 
-`m18.log`だけは出力先が固定パスではありません。上記の常駐運用例のように`C:\path\to\CodexDeck\M18\`へ配置した場合、ログは`C:\path\to\CodexDeck\m18.log`に出力されます。
+`m18.log`だけは出力先が固定パスではありません。上記の常駐運用例のように`C:\path\to\CodexDeck\M18\`へ配置した場合、ログは`C:\path\to\CodexDeck\m18.log`に出力されます。eventログは2MiB、frame／watcherログは8MiBで`.previous`へ1世代rotationします。
 
 入力が反応しない場合は、最初に`m18-events.log`へイベントが増えているか確認してください。増えていない場合は[トラブルシューティング](docs/TROUBLESHOOTING.md)を参照してください。
 
 ### 設計資料
 
-[Codex Micro版ニーズ](docs/codex-micro-m18/ニーズ.md) / [修正方針](docs/codex-micro-m18/修正方針.md) / [実行方針](docs/codex-micro-m18/実行方針.md) / [実装計画書V1](docs/codex-micro-m18/実装計画書V1.md) / [インシデントレポートV1](docs/codex-micro-m18/インシデントレポートV1.md) / [是正実装計画書V2](docs/codex-micro-m18/実装計画書V2.md) / [実装報告書V1](docs/codex-micro-m18/実装報告書V1.md) / [是正実装報告書V2](docs/codex-micro-m18/実装報告書V2.md) / [M18セットアップ](docs/M18.md)
+[Codex Micro版ニーズ](docs/codex-micro-m18/ニーズ.md) / [修正方針](docs/codex-micro-m18/修正方針.md) / [実行方針](docs/codex-micro-m18/実行方針.md) / [実装計画書V1](docs/codex-micro-m18/実装計画書V1.md) / [インシデントレポートV1](docs/codex-micro-m18/インシデントレポートV1.md) / [是正実装計画書V2](docs/codex-micro-m18/実装計画書V2.md) / [実装報告書V1](docs/codex-micro-m18/実装報告書V1.md) / [是正実装報告書V2](docs/codex-micro-m18/実装報告書V2.md) / [安定化実装計画書V6](docs/codex-micro-m18/実装計画書V6.md) / [安定化実装報告書V6](docs/codex-micro-m18/実装報告書V6.md) / [M18セットアップ](docs/M18.md)
 
 機能スコープ、実装境界、完了条件の正本は上記の「ニーズ」「修正方針」「実行方針」の3文書です。必須操作は合計45個で、下段3ボタンを面切替として使い、15 LCDキー×3シーンへ全件を収容します。README内の単一面の推奨配置を理由に、Joystick下方向、Reasoningエンコーダ、公式30キー、Usage Overview／Reset、New Task、ホスト切替を対象外または将来対応へ縮小しません。
 

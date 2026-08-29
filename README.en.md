@@ -14,7 +14,7 @@ Two deployment paths are available:
 Both paths retain the Codex Micro connection, state synchronization, rendering, and event dispatch inherited from the upstream [Codex Deck](https://github.com/dazer1234/codex-stream-deck). In the recommended path, VSD Craft handles M18 USB communication, LCD transfer, and scene management. Linux is not supported.
 
 > [!IMPORTANT]
-> This is not an official product from OpenAI, the upstream Codex Deck project, or the M18 manufacturer. It uses private Codex Desktop interfaces and may require maintenance after Codex updates. The currently targeted compatibility versions are Codex Desktop 26.814.5167.0 and VSD Craft 3.10.188.226. The VSD Craft path has not completed a fresh live retest and must not be described as currently verified. See the [investigation record](docs/vsd-craft/原因調査.md) and [test results](docs/codex-micro-m18/テスト結果V1.md) (Japanese).
+> This is not an official product from OpenAI, the upstream Codex Deck project, or the M18 manufacturer. It uses private Codex Desktop interfaces and may require maintenance after Codex updates. The direct M18 path was live-tested on August 29, 2026 with Codex Desktop 26.820.10647.0 and HOTSPOTEKUSB HID DEMO (`0x5548:0x1000`). VSD Craft compatibility targets 3.10.188.226, but its latest live retest remains a separate scope. See the [V6 implementation report](docs/codex-micro-m18/実装報告書V6.md) and [VSD Craft investigation](docs/vsd-craft/原因調査.md) (Japanese).
 
 ---
 
@@ -93,9 +93,9 @@ The 45 required operations are placed without duplication across three scenes of
 
 On the direct-connection path, `VOICE TALK`, at the right edge of the top row in Scene 2, starts a live voice conversation in ChatGPT/Codex Desktop. It is dedicated to the M18. It is **not** Dictation, Push-to-talk, or a general public Codex Micro/Stream Deck action. The VSD Craft path does not make this substitution; the same position remains the existing `MIC` / Push-to-talk control.
 
-A single press invokes Codex's native `composer.startVoiceMode` command directly, so no deck-side keyboard shortcut is required. This implementation only claims and documents **conversation start**; it does not claim that the same button stops an active conversation.
+A single press invokes Codex's native `composer.startVoiceMode` command directly, so no deck-side keyboard shortcut is required. The key is start-only: when Codex is already in an active or resumable Voice phase, it is a no-op and does not change the conversation state. Concurrent requests are single-flight, and presses during the five-second settling window are not resent. Current Codex builds are phase-checked through the Voice orb in the `avatar-overlay` renderer, with the older independent Voice-surface check retained as a compatibility fallback.
 
-Press feedback is a four-frame, approximately 320 ms one-shot transition into the existing purple Codex Micro `active` state color and back to the static key. It never loops continuously. Repeated presses are canceled/rate-limited, and a failed frame write falls back to the static image. Every static and animated M18 frame is pre-rasterized as an opaque 64×64 PNG.
+The four-frame, approximately 320 ms purple one-shot appears only after a new start command succeeds. Active or suppressed presses do not change the display. A failure shows a red `RETRY` frame for approximately 900 ms and then restores the static key. Every M18 frame is an opaque 64×64 PNG. In hardware testing, repeated presses—including one 11.84 seconds later—produced zero extra commands, pulses, or unintended state changes.
 
 The official-key groups do not add a separate “dangerous key” classification. `APPR`, `REJ`, `DEL`, and `PLAY` are ordinary single-press controls. In the current implementation, `DEL` archives a chat. `PLAY` invokes the first configured Environment Action. `GIT`, `MRG`, and `PR` open their respective flows or review surfaces; pressing them alone does not finalize a commit, merge, or published pull request.
 
@@ -290,19 +290,22 @@ powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -F
 
 The watcher restarts the runtime after it exits and follows Codex or M18 reconnections. Moving the directory after registration invalidates the startup path.
 
+Repeated startup failures back off from 5 seconds to a maximum of 60 seconds and reset after stable operation. Adapter commands time out after 5 seconds; a stalled response or USB disconnect stops the runtime so the watcher can reconnect. Codex CDP evaluations are serialized, with input commands prioritized over periodic snapshots.
+
 ### Logs
 
 | File | Contents |
 |---|---|
 | `m18.log`, created in the parent of the watcher directory | Watcher, Codex connection, M18 connection, render synchronization |
 | `%LOCALAPPDATA%\CodexDeck\m18-events.log` | `key_down`, `key_up`, and physical key number |
+| `%LOCALAPPDATA%\CodexDeck\m18-frames.log` | LCD frame timestamp, scene, key, and SHA-256 |
 | `%LOCALAPPDATA%\CodexDeck\codex-micro-bridge.json` | Current local CDP port state |
 
-If input stops responding, first check whether new events appear in `m18-events.log`, then see [Troubleshooting](docs/TROUBLESHOOTING.md).
+The event log rotates at 2 MiB, and the frame and watcher logs rotate at 8 MiB, retaining one `.previous` generation. If input stops responding, first check whether new events appear in `m18-events.log`, then see [Troubleshooting](docs/TROUBLESHOOTING.md).
 
 ### Design records
 
-[Codex Micro M18 needs](docs/codex-micro-m18/ニーズ.md) / [Change policy](docs/codex-micro-m18/修正方針.md) / [Execution policy](docs/codex-micro-m18/実行方針.md) / [Implementation Plan V1](docs/codex-micro-m18/実装計画書V1.md) / [Incident Report V1](docs/codex-micro-m18/インシデントレポートV1.md) / [Corrective Plan V2](docs/codex-micro-m18/実装計画書V2.md) / [Implementation Report V1](docs/codex-micro-m18/実装報告書V1.md) / [Corrective Report V2](docs/codex-micro-m18/実装報告書V2.md) / [M18 setup](docs/M18.md) (mostly Japanese)
+[Codex Micro M18 needs](docs/codex-micro-m18/ニーズ.md) / [Change policy](docs/codex-micro-m18/修正方針.md) / [Execution policy](docs/codex-micro-m18/実行方針.md) / [Implementation Plan V1](docs/codex-micro-m18/実装計画書V1.md) / [Incident Report V1](docs/codex-micro-m18/インシデントレポートV1.md) / [Corrective Plan V2](docs/codex-micro-m18/実装計画書V2.md) / [Implementation Report V1](docs/codex-micro-m18/実装報告書V1.md) / [Corrective Report V2](docs/codex-micro-m18/実装報告書V2.md) / [Stabilization Plan V6](docs/codex-micro-m18/実装計画書V6.md) / [Stabilization Report V6](docs/codex-micro-m18/実装報告書V6.md) / [M18 setup](docs/M18.md) (mostly Japanese)
 
 ---
 
