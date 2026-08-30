@@ -48,6 +48,34 @@ function Stop-VSDCraftRuntime {
   if ($running.Count) { Wait-Process -Id $running.ProcessId -Timeout 10 -ErrorAction SilentlyContinue }
 }
 
+function Stop-LegacyM18Runtime {
+  $legacyRoot = [IO.Path]::GetFullPath((Join-Path $env:LOCALAPPDATA 'CodexDeck\M18'))
+  $targets = @(Get-CimInstance Win32_Process | Where-Object {
+    $_.CommandLine -and $_.CommandLine.IndexOf($legacyRoot, [StringComparison]::OrdinalIgnoreCase) -ge 0
+  })
+  foreach ($name in @('codex-deck-m18-adapter.exe', 'node.exe', 'powershell.exe', 'pwsh.exe')) {
+    foreach ($process in @($targets | Where-Object Name -eq $name)) {
+      Stop-Process -Id $process.ProcessId -Force -ErrorAction SilentlyContinue
+    }
+  }
+}
+
+function Disable-LegacyM18Startup {
+  $startup = [IO.Path]::GetFullPath((Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\Startup'))
+  $source = Join-Path $startup 'Codex Deck M18.lnk'
+  if (-not (Test-Path -LiteralPath $source -PathType Leaf)) { return }
+
+  $disabledRoot = [IO.Path]::GetFullPath((Join-Path $env:LOCALAPPDATA 'CodexDeck\disabled-startup'))
+  New-Item -ItemType Directory -Force -Path $disabledRoot | Out-Null
+  $destination = Join-Path $disabledRoot 'Codex Deck M18.lnk'
+  if (Test-Path -LiteralPath $destination) {
+    $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
+    $destination = Join-Path $disabledRoot "Codex Deck M18-$stamp.lnk"
+  }
+  Move-Item -LiteralPath $source -Destination $destination
+  Write-Host "Disabled legacy M18 startup: $destination"
+}
+
 function Install-OfficialVSDCraft {
   $answer = Read-Host 'VSD Craft is not installed. Download and open the official signed installer now? [Y/N]'
   if ($answer -notmatch '^(?i:y|yes)$') {
@@ -102,6 +130,8 @@ $backupRoot = Join-Path $stateRoot 'backups'
 $staging = Join-Path $pluginRoot ".com.simeo.codex-deck.sdPlugin.installing.$PID"
 $backup = $null
 
+Stop-LegacyM18Runtime
+Disable-LegacyM18Startup
 Stop-VSDCraftRuntime
 New-Item -ItemType Directory -Force -Path $pluginRoot, $backupRoot | Out-Null
 if (Test-Path -LiteralPath $staging) { Remove-Item -LiteralPath $staging -Recurse -Force }

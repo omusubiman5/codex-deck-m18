@@ -1,0 +1,30 @@
+CODEX DECK M18 - CURRENT CANONICAL REPOSITORY VERIFICATION
+Captured: 2026-08-29 16:44:49 +09:00
+Repository: C:\Projects\codex-deck-m18
+
+BRANCH / REVISION
+Branch: main
+Local HEAD: 49ed1fcc5d6225abc357821ad6edf9e26ab5b671
+Remote main: 6530c83fde5c5be949a122c703f0ac754a1a920d
+Result: MISMATCH - canonical checkout is 3 commits behind the pushed remote main.
+Working tree: DIRTY before this verification (14 modified files and 1 untracked test).
+README.md / README.en.md: the 26.820 live-test and V6 stabilization text is ABSENT here.
+
+FRESH COMMAND RESULTS
+npm test
+  PASS: 174 tests, 0 failed, duration 2316 ms
+  Note: this includes the canonical checkout's pre-existing uncommitted changes.
+
+npm run check
+  PASS: tsc --noEmit, exit code 0
+
+npm run build
+  PASS: node scripts/build.mjs && node scripts/build-launcher.mjs, exit code 0
+
+RUNTIME
+Node: v24.15.0
+npm: 11.12.1
+
+IMPORTANT
+These results verify the current dirty canonical checkout at local HEAD 49ed1fc.
+They do NOT prove that remote commit 6530c83 is installed in this checkout.

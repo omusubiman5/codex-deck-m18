@@ -42,7 +42,7 @@ export const scenes = [
       ["Keycap · Approve", "com.simeo.codex-deck.keycap-approve"],
       ["Keycap · Reject", "com.simeo.codex-deck.keycap-reject"],
       ["Keycap · Fork Chat", "com.simeo.codex-deck.keycap-split"],
-      ["Keycap · Push-to-talk", "com.simeo.codex-deck.dictation"],
+      ["Voice Talk", "com.simeo.codex-deck.dictation"],
       ["Keycap · Codex / Submit", "com.simeo.codex-deck.keycap-codex"],
       ["Keycap · Bug / Feedback", "com.simeo.codex-deck.keycap-bug"],
       ["Keycap · OpenAI Docs", "com.simeo.codex-deck.keycap-openai-docs"],

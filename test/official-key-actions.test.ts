@@ -59,9 +59,10 @@ function recordingController(calls: ControllerCall[]): DeckController {
   }) as DeckController;
 }
 
-const event = { action: { id: "official-key", showAlert: async () => {} } } as never;
+const eventAction = { id: "official-key", showAlert: async () => {} };
+const event = { action: eventAction } as never;
 
-test("VSD Craft exposes all 30 official keys as ordinary single-press actions", async () => {
+test("VSD Craft preserves 30 UUID-compatible keys while MIC launches native Voice Talk", async () => {
   assert.equal(OFFICIAL_KEYCAP_IDS.length, 30);
   assert.deepEqual(Object.keys(classes), [...OFFICIAL_KEYCAP_IDS]);
 
@@ -71,12 +72,12 @@ test("VSD Craft exposes all 30 official keys as ordinary single-press actions", 
     await instance.onKeyDown(event);
 
     if (keycapId === "MIC") {
-      assert.deepEqual(calls, [{ method: "sendMicroAction", args: ["ACT10_ACT11", 1] }], keycapId);
-      await instance.onKeyUp?.(event);
       assert.deepEqual(calls, [
-        { method: "sendMicroAction", args: ["ACT10_ACT11", 1] },
-        { method: "sendMicroAction", args: ["ACT10_ACT11", 0] }
+        { method: "pulseVoiceAction", args: [eventAction] },
+        { method: "startM18VoiceConversation", args: [] }
       ], keycapId);
+      await instance.onKeyUp?.(event);
+      assert.equal(calls.length, 2, `${keycapId} key-up`);
     } else {
       assert.deepEqual(calls, [{ method: "runKeycap", args: [keycapId] }], keycapId);
       await instance.onKeyUp?.(event);

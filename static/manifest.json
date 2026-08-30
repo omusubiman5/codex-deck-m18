@@ -194,8 +194,8 @@
     },
     {
       "UUID": "com.simeo.codex-deck.dictation",
-      "Name": "Action 5 / Push-to-talk",
-      "Tooltip": "Send the current ACT10/ACT11 Codex Micro action.",
+      "Name": "Action 5 / Voice Talk",
+      "Tooltip": "Start Codex's native Voice conversation.",
       "Icon": "static/imgs/category-icon",
       "Controllers": [
         "Keypad"

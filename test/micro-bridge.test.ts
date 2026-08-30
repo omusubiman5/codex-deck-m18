@@ -170,7 +170,7 @@ test("environment buttons use Codex Micro's native environment action command sl
   assert.match(source, /commandRunner\(\$\{JSON\.stringify\(command\)\}, 'codex_micro_hid'\)/);
 });
 
-test("M18 Voice Talk uses Codex's native voice command without replacing the public Dictation action", async () => {
+test("M18 Voice Talk uses Codex's native voice command on both supported control paths", async () => {
   const [bridge, bindings, manifestSource, readme] = await Promise.all([
     readFile(new URL("../src/codex-micro-renderer-bridge.ts", import.meta.url), "utf8"),
     readFile(new URL("../src/m18-action-bindings.ts", import.meta.url), "utf8"),
@@ -184,7 +184,7 @@ test("M18 Voice Talk uses Codex's native voice command without replacing the pub
   assert.match(bridge, /targets\.some\(isActiveVoiceTarget\)/);
   assert.match(bridge, /avatar-overlay-voice-orb/);
   assert.match(bindings, /startM18VoiceConversation/);
-  assert.equal(dictation?.Name, "Action 5 \/ Push-to-talk");
+  assert.equal(dictation?.Name, "Action 5 \/ Voice Talk");
   assert.doesNotMatch(readme, /Configure-CodexDeckVoice|voice-shortcut\.json/i);
   assert.doesNotMatch(readme, /VOICE TALK[^\n]*(?:開始・終了|start or stop)/i);
 });

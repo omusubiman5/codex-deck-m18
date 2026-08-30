@@ -209,7 +209,30 @@ abstract class DirectKeycapAction extends SingletonAction {
 @action({ UUID: "com.simeo.codex-deck.approve" }) export class Approve extends MicroKeyAction { constructor(c: DeckController) { super(c, "ACT07"); } }
 @action({ UUID: "com.simeo.codex-deck.decline" }) export class Decline extends MicroKeyAction { constructor(c: DeckController) { super(c, "ACT08"); } }
 @action({ UUID: "com.simeo.codex-deck.fork" }) export class Fork extends MicroKeyAction { constructor(c: DeckController) { super(c, "ACT09"); } }
-@action({ UUID: "com.simeo.codex-deck.dictation" }) export class Dictation extends MicroKeyAction { constructor(c: DeckController) { super(c, "ACT10_ACT11"); } }
+@action({ UUID: "com.simeo.codex-deck.dictation" })
+export class Dictation extends SingletonAction {
+  constructor(private readonly controller: DeckController) { super(); }
+
+  override onWillAppear(ev: WillAppearEvent): void {
+    if (ev.action.isKey()) {
+      this.controller.registerFixedAction("voice-talk", ev.action, { kind: "builtin", name: "voice" });
+    }
+  }
+
+  override onWillDisappear(ev: WillDisappearEvent): void {
+    this.controller.unregisterFixedAction(ev.action);
+  }
+
+  override async onKeyDown(ev: KeyDownEvent): Promise<void> {
+    try {
+      this.controller.pulseVoiceAction(ev.action);
+      await this.controller.startM18VoiceConversation();
+    } catch (error) {
+      streamDeck.logger.error(`Voice Talk failed: ${String(error)}`);
+      await ev.action.showAlert();
+    }
+  }
+}
 @action({ UUID: "com.simeo.codex-deck.send" }) export class Send extends MicroKeyAction { constructor(c: DeckController) { super(c, "ACT12"); } }
 @action({ UUID: "com.simeo.codex-deck.plan" }) export class Plan extends JoystickAction { constructor(c: DeckController) { super(c, "up", { kind: "local", keycapId: "BRCH" }); } }
 @action({ UUID: "com.simeo.codex-deck.back" }) export class Back extends JoystickAction { constructor(c: DeckController) { super(c, "left", { kind: "builtin", name: "back" }); } }

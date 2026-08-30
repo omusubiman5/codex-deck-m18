@@ -46,6 +46,11 @@ test("standalone VSD Craft installers use bundled artifacts without rebuilding s
   assert.match(windows, /Get-AuthenticodeSignature/);
   assert.match(windows, /Shenzhen An Rui Xin Technology Co\., Ltd\./);
   assert.match(windows, /\.installing\.\$PID/);
+  assert.match(windows, /function Stop-LegacyM18Runtime/);
+  assert.match(windows, /function Disable-LegacyM18Startup/);
+  assert.match(windows, /Codex Deck M18\.lnk/);
+  assert.match(windows, /CodexDeck\\disabled-startup/);
+  assert.match(windows, /Stop-LegacyM18Runtime\s+Disable-LegacyM18Startup\s+Stop-VSDCraftRuntime/);
   assert.doesNotMatch(windows, /VSDCraftInstallerPath|npm\s|node\s/);
   assert.match(macOS, /plugin\/com\.simeo\.codex-deck\.sdPlugin/);
   assert.match(macOS, /launcher-macos/);
