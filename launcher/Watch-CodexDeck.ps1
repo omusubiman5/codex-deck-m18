@@ -16,6 +16,7 @@ $relayTunnelPidPath = Join-Path $stateRoot 'relay-tunnel.pid'
 $stopPath = Join-Path $stateRoot 'watcher.stop'
 $logPath = Join-Path $stateRoot 'watcher.log'
 $mutexName = 'Local\CodexDeckBridgeWatcher'
+$pluginManagesBridge = Test-Path -LiteralPath (Join-Path $PSScriptRoot '..\vsd-bridge-managed.json')
 
 function Test-RelayTunnelCommand([string]$CommandLine, [string]$SshHost, [int]$LocalPort, [int]$RemotePort) {
   if ([string]::IsNullOrWhiteSpace($CommandLine) -or [string]::IsNullOrWhiteSpace($SshHost)) { return $false }
@@ -253,7 +254,7 @@ try {
           $handledGeneration = $generation
           if ($lastHealthyGeneration -ne $generation) {
             Write-WatcherLog "Healthy Codex Deck bridge detected for Codex $($codex.Version) on port $port."
-            Invoke-CodexDeckLauncher
+            if (-not $pluginManagesBridge) { Invoke-CodexDeckLauncher }
             $lastHealthyGeneration = $generation
           }
           $lastState = "healthy:$generation"

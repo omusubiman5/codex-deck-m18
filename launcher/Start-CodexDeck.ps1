@@ -1,5 +1,7 @@
 param(
   [switch]$DryRun,
+  [switch]$Inspect,
+  [string]$NodePath,
   [switch]$ForceRestart,
   [switch]$InstallStartup,
   [switch]$UninstallStartup
@@ -156,7 +158,16 @@ function Get-HealthyDebugPort($Processes) {
   return $null
 }
 
-$node = Get-Command node -ErrorAction SilentlyContinue
+$launchMutex = $null
+$launchLockHeld = $false
+try {
+if (-not $Inspect -and -not $DryRun) {
+  $launchMutex = [Threading.Mutex]::new($false, 'Local\CodexDeckBridgeLaunch')
+  try { $launchLockHeld = $launchMutex.WaitOne(0) }
+  catch [Threading.AbandonedMutexException] { $launchLockHeld = $true }
+  if (-not $launchLockHeld) { throw 'Another Codex bridge connection is in progress. Try again shortly.' }
+}
+$node = if ($NodePath) { Get-Command -Name $NodePath -ErrorAction SilentlyContinue } else { Get-Command node -ErrorAction SilentlyContinue }
 if ($null -eq $node) { throw 'Node.js 20 or newer is required. Install it from https://nodejs.org/ and try again.' }
 $major = [int]((& $node.Source --version).TrimStart('v').Split('.')[0])
 if ($major -lt 20) { throw "Node.js 20 or newer is required. Found: $(& $node.Source --version)" }
@@ -164,6 +175,10 @@ if ($major -lt 20) { throw "Node.js 20 or newer is required. Found: $(& $node.So
 $codex = Get-CodexInstallation
 $processes = Get-CodexProcesses $codex.Root
 $existingPort = Get-HealthyDebugPort $processes
+if ($Inspect) {
+  @{ state = $(if ($existingPort) { 'connectable' } elseif ($processes.Count -gt 0) { 'restart-required' } else { 'stopped' }); version = $codex.Version } | ConvertTo-Json -Compress
+  exit 0
+}
 if ($DryRun) {
   Write-Host "Codex version: $($codex.Version)"
   Write-Host "Executable: $($codex.Executable)"
@@ -177,6 +192,15 @@ if ($DryRun) {
 $port = $existingPort
 if ($processes.Count -gt 0 -and -not $existingPort -and -not $ForceRestart) {
   throw 'Codex is already running without a reusable debug bridge and was left untouched. Save all work, then run again with -ForceRestart only if you explicitly want to restart every Codex process.'
+}
+
+# Validate the bundled runtime before any explicit restart closes Codex.
+$runtimeScript = Join-Path $PSScriptRoot 'runtime-override.mjs'
+if (-not (Test-Path -LiteralPath $runtimeScript)) {
+  $runtimeScript = Join-Path $PSScriptRoot '..\release\codex-deck-launcher\runtime-override.mjs'
+}
+if (-not (Test-Path -LiteralPath $runtimeScript)) {
+  throw 'The bundled runtime-override.mjs is missing. Run npm run build or use the extracted release launcher folder.'
 }
 
 if ($ForceRestart) {
@@ -207,7 +231,7 @@ if ($existingPort -and -not $ForceRestart) {
 }
 else {
   Write-Host "Starting Codex $($codex.Version) with a loopback-only bridge on port $port..."
-  Start-Process -FilePath $codex.Executable -ArgumentList @(
+  Start-Process -FilePath $codex.Executable -WindowStyle Hidden -ArgumentList @(
     '--remote-debugging-address=127.0.0.1',
     "--remote-debugging-port=$port"
   )
@@ -222,15 +246,11 @@ New-Item -ItemType Directory -Force -Path $stateRoot | Out-Null
   [Text.UTF8Encoding]::new($false)
 )
 
-$runtimeScript = Join-Path $PSScriptRoot 'runtime-override.mjs'
-if (-not (Test-Path -LiteralPath $runtimeScript)) {
-  $runtimeScript = Join-Path $PSScriptRoot '..\release\codex-deck-launcher\runtime-override.mjs'
-}
-if (-not (Test-Path -LiteralPath $runtimeScript)) {
-  throw 'The bundled runtime-override.mjs is missing. Run npm run build or use the extracted release launcher folder.'
-}
-
 & $node.Source $runtimeScript $port
 if ($LASTEXITCODE -ne 0) { throw 'The Codex Micro runtime could not be enabled.' }
 
 Write-Host 'Codex Deck is ready. Keep this Codex session open while using Stream Deck.'
+} finally {
+  if ($launchLockHeld) { $launchMutex.ReleaseMutex() }
+  if ($null -ne $launchMutex) { $launchMutex.Dispose() }
+}

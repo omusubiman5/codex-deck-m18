@@ -55,6 +55,8 @@ await cp(resolve("README.md"), resolve(output, "README.md"));
 await cp(resolve("LICENSE"), resolve(output, "LICENSE"));
 await cp(resolve("SECURITY.md"), resolve(output, "SECURITY.md"));
 await cp(resolve("CONTRIBUTING.md"), resolve(output, "CONTRIBUTING.md"));
+await cp(resolve("launcher/Connect-VSDCraftBridge.ps1"), resolve(output, "Connect-VSDCraftBridge.ps1"));
+await cp(resolve("launcher/Remove-LegacyCodexDeck.ps1"), resolve(output, "Remove-LegacyCodexDeck.ps1"));
 
 await build({
   entryPoints: [resolve("launcher/macos/codex-deck-macos.ts")],

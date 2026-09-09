@@ -41,6 +41,5 @@ export function clampPercent(value: number): number {
 export function selectAccountUsageSource(local: AccountUsageSource, remote?: AccountUsageSource): AccountUsageSource {
   const candidates = [local, remote].filter((candidate): candidate is AccountUsageSource => candidate != null);
   return candidates.find((candidate) => candidate.health.state === "ready" && candidate.snapshot?.usage != null)
-    ?? candidates.find((candidate) => candidate.snapshot?.usage != null)
-    ?? local;
+    ?? { ...local, snapshot: undefined };
 }

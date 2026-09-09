@@ -153,6 +153,7 @@ try {
 }
 
 Write-Host "Installed Codex Deck for VSD Craft: $pluginTarget"
+& (Join-Path $pluginTarget 'launcher\Remove-LegacyCodexDeck.ps1') -VsdCraftExecutable $vsdCraft
 if ($backup) { Write-Host "Previous plugin backup: $backup" }
 if (-not $NoLaunch) {
   Start-Process -FilePath $vsdCraft

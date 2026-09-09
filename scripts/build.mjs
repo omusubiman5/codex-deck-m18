@@ -33,6 +33,7 @@ for (const action of manifest.Actions ?? []) {
 await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
 await cp(resolve("static/property-inspector/usage-limit.html"), resolve(output, "static/property-inspector/usage-limit.html"));
 await cp(resolve("static/property-inspector/agent.html"), resolve(output, "static/property-inspector/agent.html"));
+for (const name of ["bridge.js", "bridge.html"]) await cp(resolve("static/property-inspector", name), resolve(output, "static/property-inspector", name));
 
 const buildResult = await build({
   entryPoints: [resolve("src/plugin.ts")],

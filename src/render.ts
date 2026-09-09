@@ -215,6 +215,7 @@ export function renderHostTargetKey(label: "WIN" | "MAC", health: HostHealthStat
 }
 
 export function renderUsageLimitKey(window: UsageWindow | undefined, requestedKind: UsageWindowKind, theme: ThemeMode = "dark", health: HostHealthState = "ready"): string {
+  if (health !== "ready") return renderFallbackKeycap(health === "connecting" ? "接続中" : "未接続", theme);
   const surface = SURFACES[theme];
   const remaining = window ? Math.round(clampPercent(window.remainingPercent)) : null;
   const signal = usageSignal(remaining, health, theme);
@@ -236,7 +237,6 @@ export function renderUsageLimitKey(window: UsageWindow | undefined, requestedKi
     <circle cx="72" cy="70" r="55" fill="url(#usageBloom)"/>
     <circle cx="72" cy="70" r="40" fill="none" stroke="${track}" stroke-width="7"/>
     ${remaining == null ? "" : `<circle data-usage-remaining="${remaining}" cx="72" cy="70" r="40" fill="none" stroke="${signal}" stroke-width="7" stroke-linecap="round" stroke-dasharray="${dash.toFixed(2)} ${circumference.toFixed(2)}" transform="rotate(-90 72 70)"/>`}
-    ${health === "degraded" || health === "offline" ? `<circle cx="72" cy="70" r="48" fill="none" stroke="${signal}" stroke-width="4" stroke-opacity=".13" filter="url(#usageGlow)"/>` : ""}
     ${remaining == null
       ? `<text x="72" y="80" text-anchor="middle" font-family="Bahnschrift, Segoe UI, Arial, sans-serif" font-size="31" font-weight="700" fill="${signal}">—</text>`
       : `<text data-usage-value="${remaining}" x="${numberX}" y="80" text-anchor="middle" fill="${surface.title}" font-family="Bahnschrift, Segoe UI, Arial, sans-serif" font-size="${fontSize}" font-weight="700">${remaining}</text><g data-usage-percent="vector" transform="translate(87 57)" fill="none" stroke="${signal}" stroke-width="2.4" stroke-linecap="round"><circle cx="2.5" cy="2.5" r="1.7"/><circle cx="10" cy="12" r="1.7"/><path d="M11 1L1.5 13.5"/></g>`}
@@ -245,6 +245,7 @@ export function renderUsageLimitKey(window: UsageWindow | undefined, requestedKi
 }
 
 export function renderUsageOverviewKey(usageWindows: UsageWindow[], theme: ThemeMode = "dark", health: HostHealthState = "ready"): string {
+  if (health !== "ready") return renderFallbackKeycap(health === "connecting" ? "接続中" : "未接続", theme);
   const surface = SURFACES[theme];
   const fiveHour = usageWindows.find((window) => window.kind === "five-hour");
   const weekly = usageWindows.find((window) => window.kind === "weekly");
@@ -263,6 +264,7 @@ export function renderRateLimitResetKey(
   theme: ThemeMode = "dark",
   health: HostHealthState = "ready"
 ): string {
+  if (health !== "ready") return renderFallbackKeycap(health === "connecting" ? "接続中" : "未接続", theme);
   const surface = SURFACES[theme];
   const count = available == null ? null : Math.max(0, Math.floor(available));
   const enabled = count != null && count > 0 && health === "ready";

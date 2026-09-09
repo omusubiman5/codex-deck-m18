@@ -1,5 +1,11 @@
 Codex Deck for VSD Craft - Windows
 
+The plugin manages the Codex connection using VSD Craft's bundled Node runtime.
+On VSD Craft startup it starts Codex if absent. No separate bridge shortcut is required.
+To recover a connection, select any Codex key in VSD Craft and use
+"Codex 接続" > "接続・復旧" in its settings. A required Codex restart asks for
+confirmation before closing tasks. Disconnected usage values are hidden.
+
 1. Extract this ZIP completely.
 2. Double-click "Install Codex Deck.cmd".
 

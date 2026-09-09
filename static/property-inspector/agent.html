@@ -18,18 +18,20 @@
     <input id="show-context-rings" type="checkbox" checked>
   </label>
   <p>This global option applies to all six Codex agent keys on this computer.</p>
+  <script src="bridge.js"></script>
   <script>
     let websocket;
     let pluginContext;
     let globalSettings = {};
 
-    window.connectElgatoStreamDeckSocket = (port, uuid, registerEvent) => {
+    window.connectElgatoStreamDeckSocket = (port, uuid, registerEvent, info, actionInfo) => {
       pluginContext = uuid;
       websocket = new WebSocket(`ws://127.0.0.1:${port}`);
       websocket.addEventListener("open", () => {
         websocket.send(JSON.stringify({ event: registerEvent, uuid }));
         websocket.send(JSON.stringify({ event: "getGlobalSettings", context: pluginContext }));
       });
+      window.attachBridgeControls(websocket, actionInfo);
       websocket.addEventListener("message", (message) => {
         const event = JSON.parse(message.data);
         if (event.event !== "didReceiveGlobalSettings") return;

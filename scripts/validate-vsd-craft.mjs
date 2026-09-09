@@ -19,7 +19,13 @@ for (const filename of ["Start-CodexDeck.ps1", "Watch-CodexDeck.ps1", "runtime-o
   await access(resolve(root, "launcher", filename));
 }
 await access(resolve(root, "launcher/node_modules/ws/package.json"));
+await access(resolve(root, "launcher/Connect-VSDCraftBridge.ps1"));
+await access(resolve(root, "launcher/Remove-LegacyCodexDeck.ps1"));
+await access(resolve(root, "vsd-bridge-managed.json"));
+await access(resolve(root, "static/property-inspector/bridge.js"));
 for (const action of manifest.Actions ?? []) {
+  if (!action.PropertyInspectorPath) failures.push(`Action ${action.UUID} has no bridge controls.`);
+  else await access(resolve(root, action.PropertyInspectorPath));
   if (action.Icon !== "static/imgs/category-icon") failures.push(`Action ${action.UUID} has a fixed icon.`);
   if (action.States?.[0]?.Image !== "static/imgs/key") failures.push(`Action ${action.UUID} has a fixed state image.`);
 }

@@ -142,6 +142,12 @@ VSD Craftの標準UIでキーをドラッグ配置します。実機には上表
 
 ### Windowsへの導入
 
+#### 起動と接続の復旧
+
+現在のソース版では、VSD CraftのCodexプラグインがブリッジを管理します。VSD Craft起動時にCodexが未起動なら自動起動し、接続済みならそのまま再利用します。専用ショートカットや別のNode.js起動操作は不要です。起動後にCodexを終了した場合は、勝手に起動し直しません。
+
+未接続の場合は、VSD CraftでCodexのボタンを選択し、設定欄の **Codex 接続 → 接続・復旧** を押してください。通常起動したCodexの再起動が必要な場合だけ確認画面が出ます。切断中の使用量・リセット残数は「未接続」と表示します。詳細は[ブリッジ統合のニーズ](docs/vsd-craft-bridge-integration/ニーズ.md)を参照してください。
+
 #### 配布版（推奨）
 
 GitHub Releaseの`codex-deck-vsd-craft-windows-v*.zip`を展開し、`Install Codex Deck.cmd`をダブルクリックします。VSD Craftが未導入の場合は、公式VSDinsideサーバーからMSIを直接取得し、Authenticode署名と発行元を検証してからメーカーのインストーラーを開きます。公式アプリ本体を本リポジトリの配布物へ転載はしません。ソース、Node.js、ESET、別途用意するVSD Craftインストーラは不要です。

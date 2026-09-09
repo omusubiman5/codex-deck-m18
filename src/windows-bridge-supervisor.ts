@@ -14,7 +14,8 @@ export function startWindowsBridgeSupervisor(logger: DeckLogger): void {
     "launcher",
     "Watch-CodexDeck.ps1"
   );
-  const watcher = [packagedWatcher, installedWatcher].find((candidate) => existsSync(candidate));
+  const managedPackage = existsSync(fileURLToPath(new URL("../vsd-bridge-managed.json", import.meta.url)));
+  const watcher = (managedPackage ? [packagedWatcher] : [packagedWatcher, installedWatcher]).find((candidate) => existsSync(candidate));
   if (!watcher) {
     logger.warn("Codex Deck bridge supervisor is unavailable; the Windows launcher bundle is missing.");
     return;

@@ -1,6 +1,7 @@
 import streamDeck from "@elgato/streamdeck";
 import { DeckController } from "./controller.js";
 import { startWindowsBridgeSupervisor } from "./windows-bridge-supervisor.js";
+import { createVsdBridgeManager } from "./vsd-bridge-manager.js";
 import {
   Agent1, Agent2, Agent3, Agent4, Agent5, Agent6,
   Approve, Back, Decline, Dictation, Fast, Fork, Forward, NewTask,
@@ -47,7 +48,17 @@ for (const pluginAction of [
 
 streamDeck.connect();
 startWindowsBridgeSupervisor(streamDeck.logger);
+const bridgeManager = createVsdBridgeManager(streamDeck.logger, () => controller.isLocalBridgeReady());
+bridgeManager?.start();
+streamDeck.ui.onSendToPlugin((event) => {
+  const payload = event.payload;
+  if (!bridgeManager || !payload || typeof payload !== "object" || Array.isArray(payload) || payload.type !== "vsd-bridge") return;
+  if (payload.command === "recover") void bridgeManager.recover();
+  else if (payload.command !== "status") return;
+  void streamDeck.ui.sendToPropertyInspector({ type: "vsd-bridge", state: bridgeManager.state, detail: bridgeManager.detail })
+    .catch((error) => streamDeck.logger.warn(`Bridge status delivery failed: ${String(error)}`));
+});
 void controller.start().catch((error) => streamDeck.logger.error(`Codex-Verbindung fehlgeschlagen: ${String(error)}`));
 
-process.once("SIGTERM", () => controller.stop());
-process.once("SIGINT", () => controller.stop());
+process.once("SIGTERM", () => { bridgeManager?.stop(); controller.stop(); });
+process.once("SIGINT", () => { bridgeManager?.stop(); controller.stop(); });

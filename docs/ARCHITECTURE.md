@@ -45,6 +45,10 @@ The relay uses that identity; the CDP port is never a relay endpoint.
 
 ### Stream Deck plugin
 
+The Windows VSD Craft package includes a `vsd-bridge-managed.json` marker and a plugin-owned bridge manager. It uses VSD Craft's own Node executable, starts an absent Codex once at plugin startup, and retries a connectable session at bounded intervals. An already-running ordinary Codex session is never automatically restarted. Every Codex action's property inspector exposes connection status and an explicit recovery control; the bundled helper asks for confirmation before a required restart. Closing Codex later does not trigger repeated launches. The legacy watcher remains observation-only. Non-VSD and macOS startup behavior is unchanged.
+
+The packaged watcher recognizes the same marker and leaves runtime activation to the manager, avoiding competing launcher calls while retaining relay observation. Usage source selection excludes disconnected cached snapshots. The usage and reset renderers also reject non-ready health, displaying an unavailable state rather than cached numbers.
+
 The same plugin runs on Windows and macOS. It discovers the local loopback port from the platform state file or from a running Codex process. It then uses Chrome DevTools Protocol `Runtime.evaluate` calls to:
 
 1. discover the current version-hashed Codex renderer modules;

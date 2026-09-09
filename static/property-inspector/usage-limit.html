@@ -22,6 +22,7 @@
     </select>
   </label>
   <p>Automatic prefers the 5-hour window and falls back to weekly when Codex does not provide it.</p>
+  <script src="bridge.js"></script>
   <script>
     let websocket;
     let context;
@@ -35,6 +36,7 @@
       document.getElementById("mode").value = mode;
       websocket = new WebSocket(`ws://127.0.0.1:${port}`);
       websocket.addEventListener("open", () => websocket.send(JSON.stringify({ event: registerEvent, uuid })));
+      window.attachBridgeControls(websocket, actionInfo);
     };
 
     document.getElementById("mode").addEventListener("change", (event) => {

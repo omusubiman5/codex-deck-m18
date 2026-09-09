@@ -10,7 +10,7 @@ await mkdir(resolve("dist-vsd-craft"), { recursive: true });
 await cp(source, output, { recursive: true });
 await copyDistributionLicenses(source, output);
 await mkdir(resolve(output, "launcher"), { recursive: true });
-for (const filename of ["Start-CodexDeck.ps1", "Watch-CodexDeck.ps1", "runtime-override.mjs"]) {
+for (const filename of ["Start-CodexDeck.ps1", "Watch-CodexDeck.ps1", "Connect-VSDCraftBridge.ps1", "Remove-LegacyCodexDeck.ps1", "runtime-override.mjs"]) {
   await cp(resolve("release/codex-deck-launcher", filename), resolve(output, "launcher", filename));
 }
 await cp(
@@ -21,6 +21,8 @@ await cp(
 
 const manifestPath = resolve(output, "manifest.json");
 const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+await writeFile(resolve(output, "vsd-bridge-managed.json"), '{"version":1}\n');
+for (const action of manifest.Actions ?? []) action.PropertyInspectorPath ??= "static/property-inspector/bridge.html";
 manifest.SDKVersion = 1;
 manifest.CodePathWin = manifest.CodePath;
 manifest.CodePathMac = manifest.CodePath;

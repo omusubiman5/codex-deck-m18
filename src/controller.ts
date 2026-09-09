@@ -47,6 +47,10 @@ export const VOICE_PULSE_LEVELS = [0.22, 0.62, 1, 0.42] as const;
 export const VOICE_PULSE_DELAYS_MS = [70, 80, 90, 80] as const;
 const VOICE_PULSE_RATE_LIMIT_MS = 180;
 export class DeckController {
+  isLocalBridgeReady(): boolean {
+    return this.localHealth.state === "ready" && this.localSnapshot != null
+      && Date.now() - this.localSnapshot.observedAt < 15_000;
+  }
   private readonly microBridge: CodexMicroRendererBridge;
   private readonly agents = new Map<string, AgentRegistration>();
   private readonly microActions = new Map<string, MicroActionRegistration>();

@@ -80,6 +80,7 @@ function Find-VSDCraftExecutable {
     (Join-Path $env:LOCALAPPDATA 'Programs\VSD Craft\VSD Craft.exe'),
     (Join-Path $env:LOCALAPPDATA 'Programs\StreamDock\StreamDock.exe'),
     'C:\Program Files\VSD Craft\VSD Craft.exe',
+    'C:\Program Files (x86)\VSD Craft\VSD Craft.exe',
     'C:\Program Files\StreamDock\StreamDock.exe'
   )) {
     if (Test-Path -LiteralPath $candidate -PathType Leaf) { return $candidate }
@@ -130,6 +131,9 @@ if (Test-Path -LiteralPath $pluginDestination -PathType Container) {
 }
 Copy-Item -LiteralPath $pluginSource -Destination $pluginDestination -Recurse
 Write-Host "Installed Codex Deck plugin: $pluginDestination"
+$executable = Find-VSDCraftExecutable
+if (-not $executable) { throw 'VSD Craft executable was not found after installation.' }
+& (Join-Path $pluginDestination 'launcher\Remove-LegacyCodexDeck.ps1') -VsdCraftExecutable $executable
 
 if ($Launch) {
   $executable = Find-VSDCraftExecutable

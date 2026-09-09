@@ -23,6 +23,23 @@ function decode(dataUrl: string): string {
   return decodeURIComponent(dataUrl.replace(/^data:image\/svg\+xml;charset=utf8,/, ""));
 }
 
+test("disconnected usage never exposes cached percentages or reset counts", () => {
+  const cached = { usage: usage([fiveHour]) } as MicroSnapshot;
+  const local = { health: { state: "degraded" as const, changedAt: 1 }, snapshot: cached };
+  assert.equal(selectAccountUsageSource(local).snapshot, undefined);
+  const remote = { health: { state: "ready" as const, changedAt: 1 }, snapshot: cached };
+  assert.equal(selectAccountUsageSource(local, remote), remote);
+  for (const health of ["degraded", "offline", "connecting"] as const) {
+    const images = [renderUsageLimitKey(fiveHour, "five-hour", "dark", health),
+      renderUsageOverviewKey([fiveHour, weekly], "dark", health), renderRateLimitResetKey(2, 0, "dark", health)];
+    for (const image of images) {
+      const svg = decode(image);
+      assert.doesNotMatch(svg, /data-usage-remaining=|data-reset-credits=/);
+      assert.match(svg, /未接続|接続中/);
+    }
+  }
+});
+
 test("usage selection prefers 5-hour but falls back to weekly", () => {
   assert.equal(selectUsageWindow(usage([weekly]), "auto"), weekly);
   assert.equal(selectUsageWindow(usage([weekly, fiveHour]), "auto"), fiveHour);
