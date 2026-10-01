@@ -192,6 +192,12 @@ npm run validate:vsd-craft
 
 ### macOSへの導入
 
+#### 起動と接続の復旧
+
+Windows版と同様、VSD CraftのCodexプラグインがブリッジを管理します。VSD Craft起動時にCodexが未起動なら自動起動し、接続済みならそのまま再利用します。専用ショートカットや別のNode.js起動操作は不要です。起動後にCodexを終了した場合は、勝手に起動し直しません。
+
+未接続の場合は、VSD CraftでCodexのボタンを選択し、設定欄の **Codex 接続 → 接続・復旧** を押してください。通常起動したCodexの再起動が必要な場合だけ確認画面が出ます。切断中の使用量・リセット残数は「未接続」と表示します。詳細は[macOS版ブリッジ統合の実装計画書](docs/vsd-craft-macos-bridge/実装計画書V1.md)を参照してください。
+
 #### 配布版（推奨）
 
 GitHub Releaseの`codex-deck-vsd-craft-macos-v*.zip`を展開し、`Install Codex Deck.command`をControlクリックして「開く」を選びます。VSD Craftが未導入の場合は、公式VSDinsideサーバーからPKGを直接取得し、Appleパッケージ署名を検証してからInstallerを開きます。メーカー側の導入完了後、もう一度Codex Deckインストーラーを実行します。公式アプリ本体は転載せず、プラグインとCodex接続ランタイムだけを同梱します。

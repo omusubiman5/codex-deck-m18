@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildCodexLaunchSpec, buildLaunchAgentPlist, buildWatcherLaunchScript, parseDebugPort } from "../launcher/macos/codex-deck-macos.js";
+import { bridgeInspectionFor, buildCodexLaunchSpec, buildLaunchAgentPlist, buildWatcherLaunchScript, parseDebugPort } from "../launcher/macos/codex-deck-macos.js";
 import { codexDeckStateRoot } from "../src/codex-deck-paths.js";
 
 test("macOS launcher uses LaunchServices and passes loopback-only CDP arguments", () => {
@@ -61,6 +61,29 @@ test("macOS release packaging preserves executable launchers", async () => {
   assert.match(source, /start-codex-deck\.sh/);
   assert.match(source, /Start Codex Deck\.command/);
   assert.match(source, /ditto -c -k/);
+});
+
+test("macOS bridge inspection follows the shared inspect contract", () => {
+  assert.equal(bridgeInspectionFor(false, null), "stopped");
+  assert.equal(bridgeInspectionFor(false, 43123), "connectable");
+  assert.equal(bridgeInspectionFor(true, 43123), "connectable");
+  assert.equal(bridgeInspectionFor(true, null), "restart-required");
+});
+
+test("macOS interactive recovery confirms before restarting Codex", async () => {
+  const source = await import("node:fs/promises").then(({ readFile }) => readFile(new URL("../launcher/macos/codex-deck-macos.ts", import.meta.url), "utf8"));
+  assert.match(source, /command === "inspect"/);
+  assert.match(source, /command === "connect"/);
+  assert.match(source, /BRIDGE_LAUNCH_LOCK_PATH/);
+  assert.match(source, /BRIDGE_RECOVERY_LOCK_PATH/);
+  assert.match(source, /\/usr\/bin\/osascript/);
+  assert.match(source, /display dialog/);
+  assert.match(source, /RESTART_CANCEL_BUTTON = "キャンセル"/);
+  assert.match(source, /default button \$\{quoted\(RESTART_CANCEL_BUTTON\)\}/);
+  assert.match(source, /cancel button \$\{quoted\(RESTART_CANCEL_BUTTON\)\}/);
+  assert.match(source, /CANCELLED/);
+  assert.match(source, /startOnce\(true\)/);
+  assert.doesNotMatch(source, /SIGKILL|kill\(-9|Stop-Process/);
 });
 
 test("macOS runtime supports relay pairing without exposing the CDP listener", async () => {

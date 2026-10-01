@@ -30,6 +30,8 @@ const WATCHER_STATE_PATH = join(STATE_ROOT, "watcher-state.json");
 const WATCHER_LOG_PATH = join(STATE_ROOT, "watcher.log");
 const WATCHER_STDERR_PATH = join(STATE_ROOT, "watcher.stderr.log");
 const WATCHER_LOCK_PATH = join(STATE_ROOT, "watcher.lock");
+const BRIDGE_LAUNCH_LOCK_PATH = join(STATE_ROOT, "bridge-launch.lock");
+const BRIDGE_RECOVERY_LOCK_PATH = join(STATE_ROOT, "bridge-recovery.lock");
 const RELAY_SERVER_CONFIG_PATH = join(STATE_ROOT, "relay-server.json");
 const MOBILE_LOCAL_CONFIG_PATH = join(STATE_ROOT, LOCAL_MOBILE_CONFIG);
 const INSTALLED_RUNTIME_PATH = join(STATE_ROOT, "codex-deck-macos.mjs");
@@ -632,26 +634,82 @@ async function disableMobileLocal(): Promise<void> {
 }
 
 async function startOnce(allowRestart: boolean): Promise<number> {
-  let installation = await discoverCodexInstallation();
+  const releaseLaunchLock = await acquirePidLock(BRIDGE_LAUNCH_LOCK_PATH);
+  if (!releaseLaunchLock) {
+    throw new Error("Another Codex bridge connection is in progress. Try again shortly.");
+  }
+  try {
+    let installation = await discoverCodexInstallation();
+    const main = findMainProcess(installation);
+    let port = await healthyDebugPort(main);
+    if (main && !port && !allowRestart) {
+      console.error("Codex is already running without a reusable loopback bridge.");
+      console.error("A restart requires explicit permission. Re-run with --restart only after saving unsent composer text.");
+      return 2;
+    }
+    if (main && !port) {
+      await terminateCodex(main);
+      installation = await discoverCodexInstallation();
+    }
+    if (!port) {
+      port = await chooseLoopbackPort();
+      await launchCodex(installation, port);
+    }
+    const result = await enableBridge(installation, port);
+    console.log(`Codex Deck ready on 127.0.0.1:${port}.`);
+    console.log(JSON.stringify(result, null, 2));
+    return 0;
+  } finally {
+    await releaseLaunchLock();
+  }
+}
+
+export type BridgeInspectionState = "stopped" | "connectable" | "restart-required";
+
+export function bridgeInspectionFor(running: boolean, port: number | null): BridgeInspectionState {
+  if (port != null) return "connectable";
+  return running ? "restart-required" : "stopped";
+}
+
+async function inspectBridgeState(): Promise<{ state: BridgeInspectionState; version: string }> {
+  const installation = await discoverCodexInstallation();
   const main = findMainProcess(installation);
-  let port = await healthyDebugPort(main);
-  if (main && !port && !allowRestart) {
-    console.error("Codex is already running without a reusable loopback bridge.");
-    console.error("A restart requires explicit permission. Re-run with --restart only after saving unsent composer text.");
-    return 2;
+  const port = await healthyDebugPort(main);
+  return { state: bridgeInspectionFor(main != null, port), version: installation.version };
+}
+
+async function inspect(): Promise<void> {
+  console.log(JSON.stringify(await inspectBridgeState()));
+}
+
+const RESTART_CONFIRM_TITLE = "VSD Craft — Codexの接続を復旧";
+const RESTART_CONFIRM_MESSAGE = "ボタンを接続するため、Codexを再起動します。すべてのCodexウィンドウが閉じ、実行中の作業が中断されます。未送信の入力を保存してから「再起動して接続」を選んでください。";
+const RESTART_CANCEL_BUTTON = "キャンセル";
+const RESTART_APPROVE_BUTTON = "再起動して接続";
+
+function confirmCodexRestart(): boolean {
+  const quoted = (value: string) => `"${value.replaceAll("\\", "\\\\").replaceAll('"', '\\"')}"`;
+  const script = `display dialog ${quoted(RESTART_CONFIRM_MESSAGE)} with title ${quoted(RESTART_CONFIRM_TITLE)} buttons {${quoted(RESTART_CANCEL_BUTTON)},${quoted(RESTART_APPROVE_BUTTON)}} default button ${quoted(RESTART_CANCEL_BUTTON)} cancel button ${quoted(RESTART_CANCEL_BUTTON)} with icon caution`;
+  const result = spawnSync("/usr/bin/osascript", ["-e", script], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+  return result.status === 0;
+}
+
+async function connectBridge(): Promise<number> {
+  const release = await acquirePidLock(BRIDGE_RECOVERY_LOCK_PATH);
+  if (!release) return 0;
+  try {
+    const { state } = await inspectBridgeState();
+    if (state === "restart-required") {
+      if (!confirmCodexRestart()) {
+        console.log("CANCELLED");
+        return 0;
+      }
+      return await startOnce(true);
+    }
+    return await startOnce(false);
+  } finally {
+    await release();
   }
-  if (main && !port) {
-    await terminateCodex(main);
-    installation = await discoverCodexInstallation();
-  }
-  if (!port) {
-    port = await chooseLoopbackPort();
-    await launchCodex(installation, port);
-  }
-  const result = await enableBridge(installation, port);
-  console.log(`Codex Deck ready on 127.0.0.1:${port}.`);
-  console.log(JSON.stringify(result, null, 2));
-  return 0;
 }
 
 async function selfTest(): Promise<void> {
@@ -716,6 +774,8 @@ async function selfTest(): Promise<void> {
 async function main(): Promise<number> {
   const command = process.argv[2] ?? "start";
   if (command === "--dry-run" || command === "dry-run") { await dryRun(); return 0; }
+  if (command === "inspect") { await inspect(); return 0; }
+  if (command === "connect") return await connectBridge();
   if (command === "--self-test" || command === "self-test") { await selfTest(); return 0; }
   if (command === "--print-launch-agent" || command === "print-launch-agent") {
     process.stdout.write(buildLaunchAgentPlist()); return 0;
@@ -732,7 +792,7 @@ async function main(): Promise<number> {
   if (command === "watch") return await runWatcher();
   if (command === "start") return await startOnce(process.argv.includes("--restart"));
   if (command === "--restart") return await startOnce(true);
-  throw new Error("Usage: start-codex-deck.sh [start [--restart]|dry-run|self-test|install|uninstall|watch|relay-config <127.0.0.1-or-tailscale-ip> [port]|relay-disable|mobile-local-config [port] [--rotate]|mobile-local-disable|print-launch-agent]");
+  throw new Error("Usage: start-codex-deck.sh [start [--restart]|dry-run|self-test|install|uninstall|watch|inspect|connect|relay-config <127.0.0.1-or-tailscale-ip> [port]|relay-disable|mobile-local-config [port] [--rotate]|mobile-local-disable|print-launch-agent]");
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

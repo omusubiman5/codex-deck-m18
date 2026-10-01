@@ -70,7 +70,8 @@ try {
   await verifyArchive(macArchive, [
     `${macName}/Install Codex Deck.command`,
     `${macName}/launcher-macos/start-codex-deck.sh`,
-    `${macName}/plugin/com.simeo.codex-deck.sdPlugin/manifest.json`
+    `${macName}/plugin/com.simeo.codex-deck.sdPlugin/manifest.json`,
+    `${macName}/plugin/com.simeo.codex-deck.sdPlugin/launcher/codex-deck-macos.mjs`
   ], new Set([
     `${macName}/Install Codex Deck.command`,
     `${macName}/launcher-macos/start-codex-deck.sh`,

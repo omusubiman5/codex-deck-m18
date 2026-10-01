@@ -5,6 +5,17 @@ import test from "node:test";
 const source = (path: string): Promise<string> =>
   readFile(new URL(`../${path}`, import.meta.url), "utf8");
 
+test("VSD Craft package bundles the macOS bridge runtime for both platforms", async () => {
+  const [builder, validator, packager] = await Promise.all([
+    source("scripts/build-vsd-craft.mjs"),
+    source("scripts/validate-vsd-craft.mjs"),
+    source("scripts/package-vsd-craft-installers.mjs")
+  ]);
+  assert.match(builder, /codex-deck-launcher-macos\/codex-deck-macos\.mjs/);
+  assert.match(validator, /launcher\/codex-deck-macos\.mjs/);
+  assert.match(packager, /launcher\/codex-deck-macos\.mjs/);
+});
+
 test("VSD Craft package declares the shared Node entry point for Windows and macOS", async () => {
   const [builder, validator] = await Promise.all([
     source("scripts/build-vsd-craft.mjs"),
