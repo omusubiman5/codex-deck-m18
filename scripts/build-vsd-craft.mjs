@@ -13,6 +13,7 @@ await mkdir(resolve(output, "launcher"), { recursive: true });
 for (const filename of ["Start-CodexDeck.ps1", "Watch-CodexDeck.ps1", "Connect-VSDCraftBridge.ps1", "Remove-LegacyCodexDeck.ps1", "runtime-override.mjs"]) {
   await cp(resolve("release/codex-deck-launcher", filename), resolve(output, "launcher", filename));
 }
+await cp(resolve("release/codex-deck-launcher-macos/codex-deck-macos.mjs"), resolve(output, "launcher/codex-deck-macos.mjs"));
 await cp(
   resolve("release/codex-deck-launcher/node_modules"),
   resolve(output, "launcher/node_modules"),

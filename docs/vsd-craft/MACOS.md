@@ -10,7 +10,7 @@ macOS 13以降で、メーカー標準のVSD Craftを使ってVSD Inside M18か�
 - 下部3物理ボタンはVSD Craft標準のシーン切替に使う。
 - 必須45操作を15件ずつ収めた3シーンの役割はWindows版と同じ。
 - M18のUSB通信、シーン、LCD転送はVSD Craftへ任せる。
-- Codex Desktopとの接続は上流Codex DeckのmacOS watcherとローカルCDPを使う。
+- Codex Desktopとの接続はプラグイン所有のブリッジマネージャーとローカルCDPを使う。LaunchAgent watcherは観測・relay用に残る。
 
 ## 前提
 
@@ -58,5 +58,9 @@ Windows版と同じCodex DeckアクションをVSD Craft標準UIから配置し�
 3. AgentキーとCodex MicroアクションがmacOS版Codexへ届く。
 4. 下部3ボタンが3シーンを直接切り替える。
 5. 45操作が3面へ重複なく配置されている。
+6. Codex未起動でVSD Craftを起動すると、プラグインがCodexを一度だけ自動起動する。
+7. 通常起動済みCodexが確認なしに再起動されない。設定欄の **Codex 接続 → 接続・復旧** で確認ダイアログを経て再接続できる。
+8. ダイアログのキャンセルでCodexを変更しない。
+9. Codexを閉じた後に自動で再起動しない。
 
 macOS実機とM18を接続した最終確認が終わるまでは、macOS対応を「実機検証済み」とは扱いません。

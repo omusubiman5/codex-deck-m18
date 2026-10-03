@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import test from "node:test";
-import { VsdBridgeManager, type BridgeInspection } from "../src/vsd-bridge-manager.js";
+import { createVsdBridgeManager, VsdBridgeManager, type BridgeInspection } from "../src/vsd-bridge-manager.js";
 
 function setup(initial: BridgeInspection) {
   let inspection = initial;
@@ -102,6 +105,23 @@ test("failed recovery surfaces an error and does not spin", async () => {
   await manager.tick();
   assert.equal(manager.state, "error");
   assert.equal(count, 1);
+});
+
+test("darwin factory requires the managed marker and the bundled macOS runtime", async () => {
+  const root = await mkdtemp(join(tmpdir(), "codex-deck-manager-"));
+  const logger = { info() {}, warn() {}, error() {} };
+  const unhealthy = () => false;
+  try {
+    assert.equal(createVsdBridgeManager(logger, unhealthy, { platform: "darwin", root }), undefined);
+    await writeFile(join(root, "vsd-bridge-managed.json"), "{}\n");
+    assert.equal(createVsdBridgeManager(logger, unhealthy, { platform: "darwin", root }), undefined);
+    await mkdir(join(root, "launcher"), { recursive: true });
+    await writeFile(join(root, "launcher", "codex-deck-macos.mjs"), "// bundled runtime\n");
+    assert.ok(createVsdBridgeManager(logger, unhealthy, { platform: "darwin", root }));
+    assert.equal(createVsdBridgeManager(logger, unhealthy, { platform: "linux", root }), undefined);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
 });
 
 test("disconnect during retry backoff immediately clears the connected label", async () => {

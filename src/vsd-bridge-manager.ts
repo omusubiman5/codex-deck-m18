@@ -104,9 +104,15 @@ export class VsdBridgeManager {
   }
 }
 
-export function createVsdBridgeManager(logger: DeckLogger, healthy: () => boolean): VsdBridgeManager | undefined {
-  const root = fileURLToPath(new URL("../", import.meta.url));
-  if (process.platform !== "win32" || !existsSync(join(root, "vsd-bridge-managed.json"))) return;
+function parseInspectionState(stdout: string): BridgeInspection {
+  const result = JSON.parse(stdout) as { state?: string };
+  if (result.state !== "stopped" && result.state !== "connectable" && result.state !== "restart-required") {
+    throw new Error("Unexpected bridge inspection state");
+  }
+  return result.state;
+}
+
+function createWindowsVsdBridgeManager(root: string, logger: DeckLogger, healthy: () => boolean): VsdBridgeManager {
   const shell = join(process.env.SystemRoot ?? "C:\\Windows", "System32", "WindowsPowerShell", "v1.0", "powershell.exe");
   const run = (filename: string, args: string[], interactive = false): Promise<string> => new Promise((resolve, reject) => {
     execFile(shell, ["-NoLogo", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", join(root, "launcher", filename), "-NodePath", process.execPath, ...args],
@@ -115,11 +121,34 @@ export function createVsdBridgeManager(logger: DeckLogger, healthy: () => boolea
   });
   return new VsdBridgeManager({
     logger, healthy, now: Date.now,
-    inspect: async () => {
-      const result = JSON.parse(await run("Start-CodexDeck.ps1", ["-Inspect"]));
-      if (!["stopped", "connectable", "restart-required"].includes(result.state)) throw new Error("Unexpected bridge inspection state");
-      return result.state;
-    },
+    inspect: async () => parseInspectionState(await run("Start-CodexDeck.ps1", ["-Inspect"])),
     connect: async (interactive) => { await run(interactive ? "Connect-VSDCraftBridge.ps1" : "Start-CodexDeck.ps1", [], interactive); }
   });
+}
+
+function createMacOsVsdBridgeManager(root: string, logger: DeckLogger, healthy: () => boolean): VsdBridgeManager | undefined {
+  const runtime = join(root, "launcher", "codex-deck-macos.mjs");
+  if (!existsSync(runtime)) return;
+  const run = (command: string, interactive = false): Promise<string> => new Promise((resolve, reject) => {
+    execFile(process.execPath, [runtime, command],
+      { timeout: interactive ? 0 : 60_000, maxBuffer: 128 * 1024 },
+      (error, stdout) => error ? reject(error) : resolve(stdout));
+  });
+  return new VsdBridgeManager({
+    logger, healthy, now: Date.now,
+    inspect: async () => parseInspectionState(await run("inspect")),
+    connect: async (interactive) => { await run(interactive ? "connect" : "start", interactive); }
+  });
+}
+
+export function createVsdBridgeManager(
+  logger: DeckLogger,
+  healthy: () => boolean,
+  options: { platform?: NodeJS.Platform; root?: string } = {}
+): VsdBridgeManager | undefined {
+  const root = options.root ?? fileURLToPath(new URL("../", import.meta.url));
+  if (!existsSync(join(root, "vsd-bridge-managed.json"))) return;
+  const platform = options.platform ?? process.platform;
+  if (platform === "win32") return createWindowsVsdBridgeManager(root, logger, healthy);
+  if (platform === "darwin") return createMacOsVsdBridgeManager(root, logger, healthy);
 }
