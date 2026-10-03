@@ -192,6 +192,8 @@ npm run validate:vsd-craft
 
 ### macOSへの導入
 
+> **実機未検証:** VSD Craft macOS版・Codex Desktop・M18を揃えた実機での最終確認は未実施です。検証手順は[macOS導入手順](docs/vsd-craft/MACOS.md)を参照してください。
+
 #### 起動と接続の復旧
 
 Windows版と同様、VSD CraftのCodexプラグインがブリッジを管理します。VSD Craft起動時にCodexが未起動なら自動起動し、接続済みならそのまま再利用します。専用ショートカットや別のNode.js起動操作は不要です。起動後にCodexを終了した場合は、勝手に起動し直しません。
